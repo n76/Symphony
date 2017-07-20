@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Symphony</string>
+
+    <string name="req_ext_storage_perm">Permission to access to external storage.</string>
+    <string name="req_ext_storage_rationale">Music is often stored on external storage so permission is needed to look for it and read it.</string>
+
+    <string name="button_shuffle">Shuffle</string>
+    <string name="button_end">Exit</string>
+
+    <string name="toolbarTitle">Symphony</string>
+    <string name="settings_play_order">Play Order</string>
+    <string name="settings_play_order_summary">Control the order that tracks will be played.</string>
+    <string name="settings_sequential">Sequential</string>
+    <string name="settings_random_track">Random Track</string>
+    <string name="settings_random_album">Random Album</string>
+
+    <string-array name="play_select">
+        <item>Sequential</item>
+        <item>Random Track</item>
+        <item>Random Album</item>
+    </string-array>
+</resources>
