@@ -593,7 +593,6 @@ public class MusicService extends Service implements
             historyPosition++;
             if (historyPosition >= history.length)
                 historyPosition = 0;
-            Log.d(TAG, "addToHistory(): history[" + historyPosition + "]=" + trackIndex);
             history[historyPosition] = trackIndex;
         }
     }

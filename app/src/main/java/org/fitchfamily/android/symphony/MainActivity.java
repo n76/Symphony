@@ -699,15 +699,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             songIndex = 0;
         Song displaySong = currentDisplayPlayList.get(songIndex);
         String albumTitle = displaySong.getAlbum();
-        Log.d(TAG, "selectDisplayAlbum() Album title='"+albumTitle+"'");
+
         for (int i=0; i<currentDisplayAlbums.size(); i++) {
 
             if (currentDisplayAlbums.get(i).getTitle().compareTo(albumTitle) == 0) {
-                //Log.d(TAG, "selectDisplayAlbum() Title found.");
                 albumSpinner.setSelection(i);
                 return;
-            } else {
-                Log.d(TAG, "selectDisplayAlbum() no match:'"+currentDisplayAlbums.get(i).getTitle()+"'");
             }
         }
     }
