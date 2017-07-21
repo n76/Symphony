@@ -36,4 +36,6 @@ Update History
 ==============
 |Version|Date|Comment|
 |:-------|:----:|:-------|
-0.9.0|19July2017|Initial release. Not 1.0.0 as testing on multiple devices with multiple versions of Android has not been performed.
+0.9|19July2017|Initial release. Not 1.0.0 as testing on multiple devices with multiple versions of Android has not been performed.
+0.9.1|21July2017|<ul><li>Show album name in notification.</li><li>Fix issue with current track not resuming after long loss of audio focus.</li></ul>
+
