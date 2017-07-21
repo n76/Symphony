@@ -373,18 +373,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public void start() {
+        Log.d(TAG, "start() Entry.");
+        playbackPaused = false;
         musicSrv.go();
     }
 
     @Override
     public void pause() {
+        Log.d(TAG, "start() Entry.");
         playbackPaused=true;
         musicSrv.pausePlayer();
     }
 
     @Override
     public int getDuration() {
-        if(musicSrv!=null && musicBound)
+        if(musicSrv!=null && musicBound && !playbackPaused)
             return musicSrv.getDuration();
         Log.d(TAG, "getDuration() musicSrv="+(musicSrv!=null));
         Log.d(TAG, "getDuration() musicBound="+musicBound);
@@ -394,7 +397,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     public int getCurrentPosition() {
         // Log.d(TAG, "getCurrentPosition() Entry.");
-        if(musicSrv!=null && musicBound)
+        if(musicSrv!=null && musicBound && !playbackPaused)
             return musicSrv.getPosition();
         Log.d(TAG, "getCurrentPosition() musicSrv="+(musicSrv!=null));
         Log.d(TAG, "getCurrentPosition() musicBound="+musicBound);

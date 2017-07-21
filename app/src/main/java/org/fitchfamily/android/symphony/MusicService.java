@@ -73,6 +73,7 @@ public class MusicService extends Service implements
                         // mediaController.getTransportControls().pause();
                         pausePlayer();
                         // Wait 30 seconds before stopping playback
+                        /*
                         mHandler.postDelayed(new Runnable() {
                                                  @Override
                                                  public void run() {
@@ -80,6 +81,7 @@ public class MusicService extends Service implements
                                                  }
                                              },
                                 TimeUnit.SECONDS.toMillis(30));
+                                */
                     }
                     else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                         // Pause playback
