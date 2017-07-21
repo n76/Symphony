@@ -201,6 +201,7 @@ public class MusicService extends Service implements
     private boolean historyInhibit;     // Hack to keep from prev play adding to history.
 
     private String songTitle="";
+    private String songAlbum="";
     private static final int NOTIFY_ID=1;
 
     private int shuffle=PLAY_RANDOM_ALBUM;
@@ -477,6 +478,7 @@ public class MusicService extends Service implements
         Song songToPlay = songs.get(trackIndex);    //get song info
         long currSong = songToPlay.getId();           //set uri
         songTitle = songToPlay.getTitle();            //set title
+        songAlbum = songToPlay.getAlbum();
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
@@ -497,12 +499,15 @@ public class MusicService extends Service implements
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder builder = new Notification.Builder(this);
+        String contentTitle = "Playing";
+        if (songTitle.compareTo(songAlbum) != 0)
+            contentTitle = songAlbum;
 
         builder.setContentIntent(pendInt)
                 .setSmallIcon(R.drawable.play)
                 .setTicker(songTitle)
                 .setOngoing(true)
-                .setContentTitle("Playing")
+                .setContentTitle(contentTitle)
                 .setContentText(songTitle);
         Notification notify = builder.build();
 
