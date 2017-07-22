@@ -19,4 +19,10 @@
         <item>Random Track</item>
         <item>Random Album</item>
     </string-array>
+
+    <!-- List of prefixes that should be ignored when sorting albums by title -->
+    <string-array name="ignore_prefixes">
+        <item>The</item>
+        <item>A</item>
+    </string-array>
 </resources>

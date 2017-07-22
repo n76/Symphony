@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -630,7 +631,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 // Within album, sort by track. If two tracks claim the same position
                 // differentiate by title.
 
-                int rslt = a.getAlbum().compareTo(b.getAlbum());
+                int rslt = sortTitle(a.getAlbum()).compareTo(sortTitle(b.getAlbum()));
                 if (rslt == 0)
                     rslt = (int)(a.getAlbumId() - b.getAlbumId());
                 if (rslt == 0)
@@ -756,5 +757,26 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         genreName = prefs.getString(SAVED_GENRE_NAME, null);
         currentShuffleValue = prefs.getInt(SAVED_SHUFFLE_MODE, MusicService.PLAY_SEQUENTIAL);
         savedTrackIndex = prefs.getInt(SAVED_TRACK_INDEX, 0);
+    }
+
+    //
+    // Sorting by name should ignore 'The ' and 'A ' prefixes.
+    //
+    // Rather than hardcode a language specific set of prefixes,
+    // get them from a string resource that can be easily extended and
+    // internationalized.
+    //
+    // Note that trailing spaces are dropped in XML so we a one here.
+    //
+    private String sortTitle(String a) {
+        Resources res = getResources();
+        String[] prefixes = res.getStringArray(R.array.ignore_prefixes);
+
+        for (String s : prefixes) {
+            String s1 = s + " ";
+            if (a.startsWith(s1))
+                return a.substring(s1.length()).trim();
+        }
+        return a;
     }
 }
