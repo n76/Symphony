@@ -26,6 +26,7 @@ package org.fitchfamily.android.symphony;
 public class Song {
     private long id;
     private String album;
+    private String albumSortTitle;
     private long albumId;
     private String title;
     private String composer;
@@ -36,15 +37,22 @@ public class Song {
                 String songTitle,
                 String songArtist,
                 String songAlbum,
+                String songAlbumSortName,
                 long songAlbumId,
                 String songComposer,
                 int songTrack) {
         id=songId;
-        title=songTitle;
-        artist=songArtist;
-        album = songAlbum;
+        if (songTitle != null)
+            title=songTitle.trim();
+        if (songArtist != null)
+            artist=songArtist.trim();
+        if (songAlbum != null)
+            album = songAlbum.trim();
+        if (songAlbumSortName != null)
+            albumSortTitle = songAlbumSortName;
         albumId = songAlbumId;
-        composer = songComposer;
+        if (songComposer != null)
+            composer = songComposer.trim();
         track = songTrack;
     }
 
@@ -52,6 +60,7 @@ public class Song {
     public String getTitle(){return title;}
     public String getArtist(){return artist;}
     public String getAlbum(){return album;}
+    public String getAlbumSortTitle() {return albumSortTitle;}
     public long getAlbumId(){return albumId;}
     public String getComposer(){return composer;}
     public int getTrack(){return track;}
