@@ -314,7 +314,6 @@ public class MusicService extends Service implements
             if (currentTrackPlayer != null) {
                 Log.d(TAG,"onCompletion() next track prepared, starting immediately.");
                 playingIndexInfo = onDeckIndexInfo;
-                currentTrackPlayer.start();
                 setupForegroundNotification();
                 notifyMainActivity(SERVICE_NOW_PLAYING);
                 addToHistory(playingIndexInfo.getTrackIndex());
@@ -363,6 +362,8 @@ public class MusicService extends Service implements
                 onDeckIndexInfo = new IndexInfo(playingIndexInfo);
                 onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
             }
+        } else if (onDeckTrackPlayer == mp) {
+            currentTrackPlayer.setNextMediaPlayer(onDeckTrackPlayer);
         }
     }
 
@@ -488,6 +489,8 @@ public class MusicService extends Service implements
             mp.setDataSource(getApplicationContext(), trackUri);
         } catch (Exception e) {
             Log.e("MUSIC SERVICE", "Error setting data source", e);
+            mp.release();
+            return null;
         }
         mp.prepareAsync();
         return mp;
