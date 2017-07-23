@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     protected void onResume(){
         super.onResume();
         Log.d(TAG, "onResume() entry.");
-        if (musicSrv != null && musicSrv.isPlaying()) {
+        if (musicSrv != null && musicSrv.hasTrack()) {
             if (paused) {
                 paused = false;
                 controller.show();

@@ -398,6 +398,10 @@ public class MusicService extends Service implements
         return false;
     }
 
+    public synchronized boolean hasTrack() {
+        return (currentTrackPlayer != null);
+    }
+
     public synchronized void pausePlayer(){
         Log.d(TAG,"pausePlayer() entry.");
         if (currentTrackPlayer != null) {
