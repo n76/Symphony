@@ -126,7 +126,6 @@ public class MusicService extends Service implements
 
     private int[] songOrder;            // Shuffle order for songs
     private int[] albumOrder;           // Shuffle order for albums
-    private int shuffleIndex;           // Where we are in the shuffle
 
     private class IndexInfo {           // Information shuffle and track
         private int trackIndex;
@@ -245,7 +244,6 @@ public class MusicService extends Service implements
         albums=Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
         albumOrder = genPlayOrder(albums.size());
-        shuffleIndex = 0;
         resetHistory();
         playingIndexInfo = new IndexInfo();
         onDeckIndexInfo = new IndexInfo();
@@ -262,7 +260,6 @@ public class MusicService extends Service implements
                         songOrder = genPlayOrder(songs.size());
                     if (albums != null)
                         albumOrder = genPlayOrder(albums.size());
-                    shuffleIndex = 0;
                     if (onDeckTrackPlayer != null) {
                         onDeckTrackPlayer.release();
                         onDeckTrackPlayer = null;
