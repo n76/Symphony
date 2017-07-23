@@ -747,17 +747,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return 0;
     }
 
-    private int getTrackIndex(String songName) {
-        Log.d(TAG, "getGenreIndex('"+songName+"') Entry.");
-        if (currentDisplayPlayList != null) {
-            for (int i=0; i < currentDisplayPlayList.size(); i++) {
-                if (currentDisplayPlayList.get(i).getTitle().compareTo(songName) == 0)
-                    return i;
-            }
-        }
-        return 0;
-    }
-
     private void savePreferences() {
         Log.d(TAG, "savePreferences() Entry.");
         SharedPreferences.Editor editor = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE).edit();
