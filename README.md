@@ -37,5 +37,5 @@ Update History
 |:-------|:----:|:-------|
 0.9|19July2017|Initial release. Not 1.0.0 as testing on multiple devices with multiple versions of Android has not been performed.
 0.9.1|21July2017|<ul><li>Show album name in notification.</li><li>Fix issue with current track not resuming after long loss of audio focus.</li></ul>
-0.9.2| ???? |<ul><li>Improve sorting of album titles.</li><li>Remove write external storage permission.</li><li>Better resume from returning to app while music paused.</li><li>Revise build to not use beta version of support library</li></ul>
+0.9.2| 24July2017 |<ul><li>Improve sorting of album titles.</li><li>Remove write external storage permission.</li><li>Better resume from returning to app while music paused.</li><li>Revise build to not use beta version of support library</li></ul>
 
