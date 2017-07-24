@@ -27,7 +27,6 @@ Permissions
 ===========
 |Permission|Use|
 |:----------|:---|
-WRITE_EXTERNAL_STORAGE|Comes as a package with READ_EXTERNAL_STORAGE. If you know a way I can remove this permission and still have the player access your music, I would like to know how.
 READ_EXTERNAL_STORAGE|Needed to access music stored on your microSD card.
 WAKE_LOCK|So the player can go to the background without stopping
 MEDIA_CONTENT_CONTROL|So we can actually control and play you music.
@@ -38,4 +37,5 @@ Update History
 |:-------|:----:|:-------|
 0.9|19July2017|Initial release. Not 1.0.0 as testing on multiple devices with multiple versions of Android has not been performed.
 0.9.1|21July2017|<ul><li>Show album name in notification.</li><li>Fix issue with current track not resuming after long loss of audio focus.</li></ul>
+0.9.2| ???? |<ul><li>Improve sorting of album titles.</li><li>Remove write external storage permission.</li><li>Better resume from returning to app while music paused.</li><li>Revise build to not use beta version of support library</li></ul>
 
