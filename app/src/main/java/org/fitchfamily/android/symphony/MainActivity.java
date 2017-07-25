@@ -719,16 +719,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void selectDisplayAlbum(int songIndex) {
         Log.d(TAG, "selectDisplayAlbum("+songIndex+") Entry.");
-        if (songIndex >= currentDisplayPlayList.size())
-            songIndex = 0;
-        Song displaySong = currentDisplayPlayList.get(songIndex);
-        String albumTitle = displaySong.getAlbum();
+        if ((currentDisplayPlayList != null) && !currentDisplayPlayList.isEmpty()) {
+            if (songIndex >= currentDisplayPlayList.size())
+                songIndex = 0;
+            Song displaySong = currentDisplayPlayList.get(songIndex);
+            String albumTitle = displaySong.getAlbum();
 
-        for (int i=0; i<currentDisplayAlbums.size(); i++) {
+            for (int i = 0; i < currentDisplayAlbums.size(); i++) {
 
-            if (currentDisplayAlbums.get(i).getTitle().compareTo(albumTitle) == 0) {
-                albumSpinner.setSelection(i);
-                return;
+                if (currentDisplayAlbums.get(i).getTitle().compareTo(albumTitle) == 0) {
+                    albumSpinner.setSelection(i);
+                    return;
+                }
             }
         }
     }
