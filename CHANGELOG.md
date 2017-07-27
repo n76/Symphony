@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Not applicable
+
+### Changed
+- Not applicable
+
+### Removed
+- Not applicable
+
+## [1.0.0] - 2017-07-27
+### Added
 - Japanese Translation
 
 ### Changed
