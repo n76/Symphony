@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Improve random play to better avoid replaying recent items.
+- New app icon to better indicate app’s focus on classical music.
 
 ### Removed
 - Not applicable

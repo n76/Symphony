@@ -1,19 +1,29 @@
 Symphony - A music player for Android
 =====================================
 
-Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It was written because the author was unable to find a free music player that was tailored toward playing classical music and other genres where you might wish to listen to a random symphony (album) with the movements (songs) within that symphony (album) played in order.
+Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs (movements) played in the correct order.
 
-Why the name “Symphony”? Partly because [AndreasK](https://f-droid.org/packages/de.kromke.andreas.unpopmusicplayerfree/) beat me to the much better name “Unpopular Music Player” and partly because I tailored it to how I listen to symphonic music.
+Features
+========
+- “Gap-less” playback.
+- Very simple interface.
+- Within a genre, songs may be played in sequence, randomly or by random album.
 
-There are whole discussions on how classical music might be tagged and which music player supports which tags. [The Well-Tempered Computer](http://www.thewelltemperedcomputer.com/TG/2_Classical.html) has a pretty good presentation of the issue. In the case of Symphony, only tags supported by Android’s media store are used.
+Why the name “Symphony”?
+========================
+Partly because [AndreasK](https://f-droid.org/packages/de.kromke.andreas.unpopmusicplayerfree/) used the much better name “Unpopular Music Player”. And partly because it is tailored toward listening to symphonic music.
 
 Operation
 =========
-Symphony gets the list of known music genres from Android’s media provider. For each genre, it gets all “songs” with their album information. This is sorted by album and within album by track. To make it easy to access a specific performance (album) a selector is presented with the names of all albums in the list. When an album is selected the genre playlist (songs) is scrolled to the first track on the album.
+Symphony gets the list of genres for music stored locally on the phone from the Android system.
+
+When a genre is selected, a playlist is created from all the songs in the genre sorted by album and within album by track number.
+
+To make it easy to access a specific album a selector is presented with the names of all albums in the list. When an album is selected the playlist is scrolled to the first song on the album.
 
 Playback can be sequential (all tracks for all albums in alphabetical order of album name), by random track/song or by random album.
 
-The result is that if you select a classical genre then you can sequentially or randomly play all the albums (performances/compositions) in the genre, with the movements (tracks) in the correct order.
+The result is that if you select a classical genre then you can sequentially or randomly play all the albums (performances/compositions) in the genre, with the movements (songs) in the correct order.
 
 Copyright
 =========
@@ -21,7 +31,7 @@ This program is Free Software: you can redistribute it and/or modify it under th
 
 Other
 =====
-The icon for this app was derived from a [public domain image of Johann Sebastian Bach](https://commons.wikimedia.org/wiki/File:Johann_Sebastian_Bach.jpg).
+The icon for this app was derived from a [public domain image](https://commons.wikimedia.org/wiki/File:Bratsche.jpg).
 
 Permissions
 ===========
