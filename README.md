@@ -21,7 +21,7 @@ This program is Free Software: you can redistribute it and/or modify it under th
 
 Other
 =====
-The icon for this app was created from an image stated to be royalty free. If that representation is incorrect, the icon will be changed immediately upon notice.
+The icon for this app was derived from a [public domain image of Johann Sebastian Bach](https://commons.wikimedia.org/wiki/File:Johann_Sebastian_Bach.jpg).
 
 Permissions
 ===========
