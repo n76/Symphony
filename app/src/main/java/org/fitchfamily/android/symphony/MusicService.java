@@ -37,14 +37,44 @@ import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
 /**
  * Created by tfitch on 7/6/17.
  */
 
+
+/*
+ *  General notes and comments
+ *
+ *  Gapless playback
+ *      For gapless playback we need to have two media player instances: One currently playing
+ *      and the other "prepared" and ready. Since the user is most interested in the currently
+ *      playing track we need to maintain current information about it.
+ *
+ *      We also have to maintain information about the prepared media player (which, borrowing
+ *      from baseball, we call the "on deck" instance.
+ *
+ *  Random play
+ *      Unfortunately, the user doesn't really want truly random playback. For example, if a
+ *      playlist has only 10 tracks and we randomly choose the next track to play there is a
+ *      10% chance the current track will be played again.
+ *
+ *      So we build a play order list, basically by shuffling the deck. In this case our deck
+ *      is an array that contains the play list indexes and we shuffle that. We have two
+ *      shuffle lists: One for playing random tracks and one for playing random albums. We
+ *      maintain an index into the shuffle list which we simply increment, the track (or album)
+ *      to play is based on our index into the shuffle list.
+ *
+ *      The next complication is that if the user selects a specific track to play our shuffle
+ *      list index is not synchronized with their selection and it is possible that the track
+ *      (or album) we select next may be the same track (album) that they selected. To avoid
+ *      this, when the user selects a specific track (including going to the previous track)
+ *      we need to reset our shuffle index so that it point to the entry in the shuffle list
+ *      for the user's desired track.
+ */
 public class MusicService extends Service implements
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener {
@@ -124,8 +154,8 @@ public class MusicService extends Service implements
     // method that changes or checks currentTrackPlayer and/or onDeckTrackPlayer in a non-atomic
     // fashion.
 
-    private int[] songOrder;            // Shuffle order for songs
-    private int[] albumOrder;           // Shuffle order for albums
+    private Integer[] songOrder;            // Shuffle order for songs
+    private Integer[] albumOrder;           // Shuffle order for albums
 
     private class IndexInfo {           // Information shuffle and track
         private int trackIndex;
@@ -151,6 +181,33 @@ public class MusicService extends Service implements
 
         public void setTrackIndex(int newTrackIndex) {
             trackIndex = newTrackIndex;
+        }
+
+        public void setShuffleToTrack() {
+            switch (shuffle) {
+                case PLAY_RANDOM_SONG:
+                    if (songOrder != null) {
+                        shuffleIndex = Arrays.asList(songOrder).indexOf(trackIndex);
+                        Log.d(TAG, "IndexInfo.setShuffleToTrack() PLAY_RANDOM_SONG song=" + trackIndex + ", shuffle=" + shuffleIndex);
+                    }
+                    break;
+
+                case PLAY_RANDOM_ALBUM:
+                    if (albumOrder != null) {
+                        int currentAlbumIndex = -1;
+                        Long currentAlbumId = songs.get(trackIndex).getAlbumId();
+                        for (int i = 0; i < albums.size(); i++) {
+                            if (currentAlbumId == albums.get(i).getID()) {
+                                currentAlbumIndex = i;
+                                break;
+                            }
+                        }
+
+                        shuffleIndex = Arrays.asList(albumOrder).indexOf(currentAlbumIndex);
+                        Log.d(TAG, "IndexInfo.setShuffleToTrack() PLAY_RANDOM_ALBUM song=" + trackIndex + ", album="+currentAlbumIndex+", shuffle=" + shuffleIndex);
+                        break;
+                    }
+            }
         }
 
         public int nextTrackIndex() {
@@ -246,30 +303,51 @@ public class MusicService extends Service implements
         albumOrder = genPlayOrder(albums.size());
         resetHistory();
         playingIndexInfo = new IndexInfo();
-        onDeckIndexInfo = new IndexInfo();
+        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
     }
 
     public synchronized void setShuffle(int playMode){
         Log.d(TAG,"setShuffle("+Integer.toString(playMode)+") entry.");
-        switch (playMode) {
-            case PLAY_SEQUENTIAL:
-            case PLAY_RANDOM_SONG:
-            case PLAY_RANDOM_ALBUM:
-                if (playMode != shuffle) {
-                    if (songs != null)
+        if (shuffle != playMode) {
+            switch (playMode) {
+                case PLAY_SEQUENTIAL:
+                case PLAY_RANDOM_SONG:
+                case PLAY_RANDOM_ALBUM:
+                    // Generate new random track order
+                    if (songs != null) {
                         songOrder = genPlayOrder(songs.size());
+                    }
+
+                    // Generate new random album order
                     if (albums != null)
                         albumOrder = genPlayOrder(albums.size());
+
+                    // If we have a on-deck player, cancel it as our play order is
+                    // changing.
                     if (onDeckTrackPlayer != null) {
+                        if (currentTrackPlayer!=null)
+                            currentTrackPlayer.setNextMediaPlayer(null);
                         onDeckTrackPlayer.release();
                         onDeckTrackPlayer = null;
                     }
-                }
-                shuffle = playMode;
-                break;
 
-            default:
-                Log.d(TAG,"setShuffle("+Integer.toString(playMode)+") Invalid value.");
+                    // Set the new play mode and set the shuffle index to select
+                    // the current track.
+                    shuffle = playMode;
+                    playingIndexInfo.setShuffleToTrack();
+
+                    // If we are playing something, then prepare the next track
+                    // using the new play mode.
+                    if (currentTrackPlayer != null) {
+                        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                        currentTrackPlayer.setNextMediaPlayer(null);
+                        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
+                    }
+                    break;
+
+                default:
+                    Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") Invalid value.");
+            }
         }
     }
 
@@ -290,7 +368,7 @@ public class MusicService extends Service implements
     }
 
     @Override
-    public boolean onUnbind(Intent intent){
+    public boolean onUnbind(Intent intent) {
         Log.d(TAG,"onUnbind() entry.");
         resetToInitialState();
         return false;
@@ -367,7 +445,20 @@ public class MusicService extends Service implements
     public synchronized void playTrack(int trackIndex) {
         Log.d(TAG,"playTrack("+trackIndex+") entry.");
         resetToInitialState();
-        playingIndexInfo.setTrackIndex(trackIndex);
+        onDeckIndexInfo.setTrackIndex(trackIndex);
+        onDeckIndexInfo.setShuffleToTrack();
+        playingIndexInfo = onDeckIndexInfo;
+        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+        currentTrackPlayer = prepareTrack(trackIndex);    }
+
+    // Private version of play track skips setting the shuffle
+    // index to the selected track.
+    private void _playTrack(int trackIndex) {
+        Log.d(TAG,"_playTrack("+trackIndex+") entry.");
+        resetToInitialState();
+        onDeckIndexInfo.setTrackIndex(trackIndex);
+        playingIndexInfo = onDeckIndexInfo;
+        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
         currentTrackPlayer = prepareTrack(trackIndex);
     }
 
@@ -447,7 +538,7 @@ public class MusicService extends Service implements
         }
     }
 
-    public void playPrev(){
+    public synchronized void playPrev(){
         Log.d(TAG,"playPrev() entry.");
         // We maintain a list of the most recently played tracks in history[] so all we
         // have to do when requested to play previous is back up on the list and pick up
@@ -467,9 +558,9 @@ public class MusicService extends Service implements
     }
 
     //skip to next
-    public void playNext(){
+    public synchronized void playNext(){
         Log.d(TAG,"playNext() entry.");
-        playTrack(playingIndexInfo.nextTrackIndex());
+        _playTrack(playingIndexInfo.nextTrackIndex());
     }
 
     //
@@ -528,8 +619,8 @@ public class MusicService extends Service implements
         LocalBroadcastManager.getInstance(this).sendBroadcast(playingIntent);
     }
 
-    private int[] genPlayOrder(final int size) {
-        int[] rslt = new int[size];
+    private Integer[] genPlayOrder(final int size) {
+        Integer[] rslt = new Integer[size];
 
         // create sorted card deck (each value only occurs once)
         for (int i=0; i<size; i++)
