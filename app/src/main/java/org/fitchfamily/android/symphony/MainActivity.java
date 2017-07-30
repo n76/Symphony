@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -74,12 +75,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private ArrayList<Album> currentDisplayAlbums;      // Albums in currently displayed genre.
     private ArrayList<Song> currentDisplayPlayList;     // Tracks/songs in genre currently being played
+    private int displayTrackIndex;          // Index into play list of currently displayed track
 
     //
     // Values saved between instantiations
     //
     private int currentShuffleValue = MusicService.PLAY_SEQUENTIAL;
-    private String genreName = null;
+    private String playingGenreName = null;
     private int savedTrackIndex;
 
     //
@@ -151,35 +153,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() entry.");
 
-        restorePreferences();
-
-        setContentView(R.layout.main_activity);
-        initToolBar();
-
-        genres = new ArrayList<Genre>();
-        currentDisplayPlayList = new ArrayList<Song>();
-        currentDisplayAlbums = new ArrayList<Album>();
-
-        genreSpinner = (Spinner)findViewById(R.id.genre_select);
-        albumSpinner = (Spinner)findViewById(R.id.album_select);
-        songView = (ListView)findViewById(R.id.song_list);;
-
-        songAdt = new SongAdapter(this, currentDisplayPlayList);
-        songView.setAdapter(songAdt);
-        setController();
-
-        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-            setupGenreList();
-        } else {
-            Log.d(TAG, "onCreate(): Need permission to access storage.");
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_PERMISSION_STORAGE);
-        }
         servicePlayUpdateBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MusicService.SERVICE_NOW_PLAYING);
         intentFilter.addAction(MusicService.SERVICE_PAUSED);
         servicePlayUpdateBroadcastManager.registerReceiver(servicePlayingUpdateReceiver, intentFilter);
+
+        restorePreferences();
+        genres = new ArrayList<Genre>();
+        currentDisplayPlayList = new ArrayList<Song>();
+        currentDisplayAlbums = new ArrayList<Album>();
+
+        setupDisplay();
     }
 
     @Override
@@ -235,6 +220,22 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         musicBound = false;
         musicSrv=null;
         super.onDestroy();
+    }
+
+    @Override
+    public void onConfigurationChanged (Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        Log.d(TAG, "onConfigurationChanged() entry.");
+
+        // Checks the orientation of the screen
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+
+        }
+        savePreferences();
+        restorePreferences();
+        setupDisplay();
     }
 
     //
@@ -312,11 +313,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         Log.d(TAG, "songPicked() entry. Selected item = "+ view.toString());
         int selectedItem = Integer.parseInt(view.getTag().toString());
         Log.d(TAG, "songPicked() selected= "+ selectedItem);
+        displayTrackIndex = Integer.parseInt(view.getTag().toString());
         if (displayGenreId != playingGenreId) {
             musicSrv.setList(genres.get(displayGenreId).getPlaylist());
             playingGenreId = displayGenreId;
         }
-        musicSrv.playTrack(Integer.parseInt(view.getTag().toString()));
+        musicSrv.playTrack(displayTrackIndex);
         if(playbackPaused){
             setController();
             playbackPaused=false;
@@ -333,21 +335,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     private void setController(){
         //set the controller up
-        controller = new MusicController(this);
+        if (controller == null) {
+            controller = new MusicController(this);
 
-        controller.setPrevNextListeners(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playNext();
-            }
-        }, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playPrev();
-            }
-        });
+            controller.setPrevNextListeners(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    playNext();
+                }
+            }, new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    playPrev();
+                }
+            });
 
-        controller.setMediaPlayer(this);
+            controller.setMediaPlayer(this);
+        }
         controller.setAnchorView(findViewById(R.id.song_list));
         controller.setEnabled(true);
     }
@@ -467,6 +471,27 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return a1;
     }
 
+    private void setupDisplay() {
+        setContentView(R.layout.main_activity);
+        initToolBar();
+
+        genreSpinner = (Spinner)findViewById(R.id.genre_select);
+        albumSpinner = (Spinner)findViewById(R.id.album_select);
+        songView = (ListView)findViewById(R.id.song_list);
+
+        songAdt = new SongAdapter(this, currentDisplayPlayList);
+        songView.setAdapter(songAdt);
+        setController();
+
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            setupGenreList();
+        } else {
+            Log.d(TAG, "onCreate(): Need permission to access storage.");
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_PERMISSION_STORAGE);
+        }
+    }
+
     private void setupGenreList() {
         Log.d(TAG, "setupGenreList() Entry.");
         getGenreList();
@@ -516,6 +541,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         if ((currentlyPlaying > trackIndex) && (currentlyPlaying <= lastTrackIndex))
                             trackIndex = currentlyPlaying;
                     }
+                    displayTrackIndex = trackIndex;
                     songView.setSelection(trackIndex);
                 }
             }
@@ -525,8 +551,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 // TODO Auto-generated method stub
             }
         });
-        if (genreName != null) {
-            int genreIndex = getGenreIndex(genreName);
+        if (playingGenreName != null) {
+            int genreIndex = getGenreIndex(playingGenreName);
             setDisplayGenre(genreIndex);
             genreSpinner.setSelection(genreIndex);
             if (savedTrackIndex >= 0) {
@@ -587,26 +613,28 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         final Uri genreUri = MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI;
 
         Log.d(TAG, "getGenreList() entry");
-        ContentResolver genreResolver = getContentResolver();
-        Cursor genreCursor = genreResolver.query(genreUri, null, null, null, null);
+        if (genres.size() == 0) {
+            ContentResolver genreResolver = getContentResolver();
+            Cursor genreCursor = genreResolver.query(genreUri, null, null, null, null);
 
-        if (genreCursor!= null && genreCursor.moveToFirst()) {
-            int idColumn = genreCursor.getColumnIndex(MediaStore.Audio.Genres._ID);
-            int nameColumn = genreCursor.getColumnIndex(MediaStore.Audio.Genres.NAME);
+            if (genreCursor != null && genreCursor.moveToFirst()) {
+                int idColumn = genreCursor.getColumnIndex(MediaStore.Audio.Genres._ID);
+                int nameColumn = genreCursor.getColumnIndex(MediaStore.Audio.Genres.NAME);
 
-            do {
-                genres.add(new Genre(
-                        genreCursor.getLong(idColumn),
-                        genreCursor.getString(nameColumn)
-                ));
-            } while (genreCursor.moveToNext());
-        }
-        Collections.sort(genres, new Comparator<Genre>() {
-            @Override
-            public int compare(Genre o1, Genre o2) {
-                return o1.getName().compareTo(o2.getName());
+                do {
+                    genres.add(new Genre(
+                            genreCursor.getLong(idColumn),
+                            genreCursor.getString(nameColumn)
+                    ));
+                } while (genreCursor.moveToNext());
             }
-        });
+            Collections.sort(genres, new Comparator<Genre>() {
+                @Override
+                public int compare(Genre o1, Genre o2) {
+                    return o1.getName().compareTo(o2.getName());
+                }
+            });
+        }
     }
 
     private ArrayList<Song> getGenreSongs(long genreId) {
@@ -709,7 +737,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             // then select the track and track album currently playing.
             // Otherwise select the first track (and its album) in the genre.
             //
-            int songDisplayIndex = 0;
+            int songDisplayIndex = displayTrackIndex;
             if (displayGenreId == playingGenreId)
                 songDisplayIndex = currentlyPlaying;
             selectDisplayAlbum(songDisplayIndex);
@@ -722,6 +750,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if ((currentDisplayPlayList != null) && !currentDisplayPlayList.isEmpty()) {
             if (songIndex >= currentDisplayPlayList.size())
                 songIndex = 0;
+            displayTrackIndex = songIndex;
             Song displaySong = currentDisplayPlayList.get(songIndex);
             String albumTitle = displaySong.getAlbum();
 
@@ -752,14 +781,20 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private void savePreferences() {
         Log.d(TAG, "savePreferences() Entry.");
         SharedPreferences.Editor editor = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE).edit();
-        int genreId = playingGenreId;
-        if (genreId < 0)
-            genreId = displayGenreId;
-        if (genreId >= 0)
-            editor.putString(SAVED_GENRE_NAME, genres.get(genreId).getName());
+
+        int genreIndex = displayGenreId;
+        int trackIndex = displayTrackIndex;
+        if ((musicSrv != null) && musicSrv.isPlaying()) {
+            genreIndex = displayGenreId;
+            trackIndex = currentlyPlaying;
+        }
+        if (genreIndex >= 0)
+            editor.putString(SAVED_GENRE_NAME, genres.get(genreIndex).getName());
+
+
         editor.putInt(SAVED_SHUFFLE_MODE, currentShuffleValue);
-        if (currentlyPlaying >= 0)
-            editor.putInt(SAVED_TRACK_INDEX, currentlyPlaying);
+        if (trackIndex >= 0)
+            editor.putInt(SAVED_TRACK_INDEX, trackIndex);
 
         editor.apply();
 
@@ -768,7 +803,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private void restorePreferences() {
         Log.d(TAG, "restorePreferences() Entry.");
         SharedPreferences prefs = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE);
-        genreName = prefs.getString(SAVED_GENRE_NAME, null);
+        playingGenreName = prefs.getString(SAVED_GENRE_NAME, null);
         currentShuffleValue = prefs.getInt(SAVED_SHUFFLE_MODE, MusicService.PLAY_SEQUENTIAL);
         savedTrackIndex = prefs.getInt(SAVED_TRACK_INDEX, 0);
     }
