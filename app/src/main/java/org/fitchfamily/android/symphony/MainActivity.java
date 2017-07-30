@@ -233,9 +233,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
 
         }
-        savePreferences();
-        restorePreferences();
+        // Save current genre and track
+        int savedTrackIndex = displayTrackIndex;
+        int savedGenreIndex = displayGenreId;
+
         setupDisplay();
+
+        // Put genre and track back to saved
+        if (savedGenreIndex >= 0) {
+            setDisplayGenre(savedGenreIndex);
+            if (genreSpinner != null)
+                genreSpinner.setSelection(savedGenreIndex);
+            if (savedTrackIndex >= 0) {
+                selectDisplayAlbum(savedTrackIndex);
+                if (songView != null)
+                    songView.setSelection(savedTrackIndex);
+            }
+        }
     }
 
     //
@@ -360,7 +374,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         musicSrv.playNext();
         if(playbackPaused){
             playbackPaused=false;
-            controller.show();
         }
         controller.show();
     }
@@ -369,7 +382,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         musicSrv.playPrev();
         if(playbackPaused){
             playbackPaused=false;
-            controller.show();
         }
         controller.show();
     }
@@ -576,6 +588,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 ArrayAdapter.createFromResource(this,R.array.play_select,android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         shuffleSpinner.setAdapter(adapter);
+        shuffleSpinner.setSelection(currentShuffleValue);
 
         shuffleSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 
@@ -737,7 +750,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             // then select the track and track album currently playing.
             // Otherwise select the first track (and its album) in the genre.
             //
-            int songDisplayIndex = displayTrackIndex;
+            int songDisplayIndex = 0;
             if (displayGenreId == playingGenreId)
                 songDisplayIndex = currentlyPlaying;
             selectDisplayAlbum(songDisplayIndex);
