@@ -111,7 +111,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     // The service that actually does the playing
     private MusicService musicSrv = null;
     private Intent playIntent;
-    private boolean musicBound;
 
     private boolean paused=false;
     private boolean playbackPaused=false;
@@ -214,10 +213,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if ((controller != null) && controller.isShowing())
             controller.hide();
         controller = null;
-        if (musicBound) {
+        if (musicSrv != null) {
             unbindService(musicConnection);
         }
-        musicBound = false;
         musicSrv=null;
         super.onDestroy();
     }
@@ -285,13 +283,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicSrv = binder.getService();
             musicSrv.setShuffle(currentShuffleValue);
             shuffleSpinner.setSelection(currentShuffleValue);
-            musicBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "musicConnection.onServiceDisconnected() entry.");
-            musicBound = false;
+            musicSrv = null;
         }
     };
 
@@ -404,20 +401,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public int getDuration() {
-        if(musicSrv!=null && musicBound && !playbackPaused)
+        if(musicSrv != null)
             return musicSrv.getDuration();
         Log.d(TAG, "getDuration() musicSrv="+(musicSrv!=null));
-        Log.d(TAG, "getDuration() musicBound="+musicBound);
         return 0;
     }
 
     @Override
     public int getCurrentPosition() {
         // Log.d(TAG, "getCurrentPosition() Entry.");
-        if(musicSrv!=null && musicBound && !playbackPaused)
+        if(musicSrv != null)
             return musicSrv.getPosition();
         Log.d(TAG, "getCurrentPosition() musicSrv="+(musicSrv!=null));
-        Log.d(TAG, "getCurrentPosition() musicBound="+musicBound);
         return 0;
 
     }
@@ -429,10 +424,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public boolean isPlaying() {
-        if(musicSrv!=null && musicBound)
+        if(musicSrv != null)
             return musicSrv.isPlaying();
         Log.d(TAG, "isPlaying() musicSrv="+(musicSrv!=null));
-        Log.d(TAG, "isPlaying() musicBound="+musicBound);
         return false;
     }
 

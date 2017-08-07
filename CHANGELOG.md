@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Support for landscape mode on display.
 
 ### Changed
-- Not applicable
+- Fix issue 2: Track timer and length display 00:00 when paused
 
 ### Removed
 - Not applicable

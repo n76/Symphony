@@ -118,11 +118,13 @@ public class MusicService extends Service implements
                         pausePlayer();
                     } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
                         // Lower the volume, keep playing
-                        currentTrackPlayer.setVolume(0.25f, 0.25f);
+                        if (currentTrackPlayer != null)
+                            currentTrackPlayer.setVolume(0.25f, 0.25f);
                     } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                         // Your app has been granted audio focus again
                         // Raise volume to normal, restart playback if necessary
-                        currentTrackPlayer.setVolume(1.0f, 1.0f);
+                        if (currentTrackPlayer != null)
+                            currentTrackPlayer.setVolume(1.0f, 1.0f);
                     }
                 }
             };
@@ -153,6 +155,12 @@ public class MusicService extends Service implements
     // calling our MusicService methods. So we will use the synchronized attribute on each
     // method that changes or checks currentTrackPlayer and/or onDeckTrackPlayer in a non-atomic
     // fashion.
+    //
+    // We will always create a new player as the onDeckTrackPlayer. If no current player exists
+    // when it becomes prepared, we will make it the currentTrackPlayer and start it. If a
+    // currentTrackPlayer exists, then we will add it to the currentTrackPlayer as the next
+    // player.
+    //
 
     private Integer[] songOrder;            // Shuffle order for songs
     private Integer[] albumOrder;           // Shuffle order for albums
@@ -324,11 +332,12 @@ public class MusicService extends Service implements
 
                     // If we have a on-deck player, cancel it as our play order is
                     // changing.
-                    if (onDeckTrackPlayer != null) {
-                        if (currentTrackPlayer!=null)
-                            currentTrackPlayer.setNextMediaPlayer(null);
-                        onDeckTrackPlayer.release();
-                        onDeckTrackPlayer = null;
+                    if (currentTrackPlayer!=null) {
+                        currentTrackPlayer.setNextMediaPlayer(null);
+                        if (onDeckTrackPlayer != null) {
+                            onDeckTrackPlayer.release();
+                            onDeckTrackPlayer = null;
+                        }
                     }
 
                     // Set the new play mode and set the shuffle index to select
@@ -416,29 +425,44 @@ public class MusicService extends Service implements
         // Register a receiver to be notified about headphones being
         // unplugged then start playback
         if (currentTrackPlayer == mp) {
-            if (!haveAudioFocus) {
-                int result = am.requestAudioFocus(afChangeListener,
-                        // Use the music stream.
-                        AudioManager.STREAM_MUSIC,
-                        // Request permanent focus.
-                        AudioManager.AUDIOFOCUS_GAIN);
-                haveAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-            }
-            if (haveAudioFocus) {
-                if (!noisyReceiverRegistered)
-                    registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
-                noisyReceiverRegistered = true;
-                currentTrackPlayer.start();
-                setupForegroundNotification();
-                notifyMainActivity(SERVICE_NOW_PLAYING);
-                addToHistory(playingIndexInfo.getTrackIndex());
-
-                // Setup an "on Deck" player for the next track to play
-                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
-            }
+            Log.d(TAG, "onPrepared() Unexpected event on currentTrackPlayer");
         } else if (onDeckTrackPlayer == mp) {
-            currentTrackPlayer.setNextMediaPlayer(onDeckTrackPlayer);
+            if (currentTrackPlayer == null) {
+                //
+                // No currently playing track. Set the on deck track to currently playing
+                //
+                currentTrackPlayer = onDeckTrackPlayer;
+                playingIndexInfo = onDeckIndexInfo;
+
+                onDeckTrackPlayer = null;
+                if (!haveAudioFocus) {
+                    int result = am.requestAudioFocus(afChangeListener,
+                            // Use the music stream.
+                            AudioManager.STREAM_MUSIC,
+                            // Request permanent focus.
+                            AudioManager.AUDIOFOCUS_GAIN);
+                    haveAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+                }
+                if (haveAudioFocus) {
+                    if (!noisyReceiverRegistered)
+                        registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
+                    noisyReceiverRegistered = true;
+                    currentTrackPlayer.start();
+                    setupForegroundNotification();
+                    notifyMainActivity(SERVICE_NOW_PLAYING);
+                    addToHistory(playingIndexInfo.getTrackIndex());
+
+                    // Setup an "on Deck" player for the next track to play
+                    onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                    onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
+                } else {
+                    Log.d(TAG, "onPrepared(): Unable to get audio focus!");
+                }
+            } else {
+                // We are currently playing a track. Set the on deck track to play when
+                // current track is done.
+                currentTrackPlayer.setNextMediaPlayer(onDeckTrackPlayer);
+            }
         }
     }
 
@@ -449,7 +473,7 @@ public class MusicService extends Service implements
         onDeckIndexInfo.setShuffleToTrack();
         playingIndexInfo = onDeckIndexInfo;
         onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-        currentTrackPlayer = prepareTrack(trackIndex);    }
+        onDeckTrackPlayer = prepareTrack(trackIndex);    }
 
     // Private version of play track skips setting the shuffle
     // index to the selected track.
@@ -459,13 +483,13 @@ public class MusicService extends Service implements
         onDeckIndexInfo.setTrackIndex(trackIndex);
         playingIndexInfo = onDeckIndexInfo;
         onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-        currentTrackPlayer = prepareTrack(trackIndex);
+        onDeckTrackPlayer = prepareTrack(trackIndex);
     }
 
     // Items needed to support media controller calls from main activity.
     public synchronized int getPosition(){
         //Log.d(TAG,"getPosition() entry.");
-        if ((currentTrackPlayer != null) && currentTrackPlayer.isPlaying())
+        if (currentTrackPlayer != null)
             return currentTrackPlayer.getCurrentPosition();
         Log.d(TAG,"getPosition() not playing?");
         return 0;
@@ -473,7 +497,7 @@ public class MusicService extends Service implements
 
     public synchronized int getDuration(){
         //Log.d(TAG,"getDuration() entry.");
-        if ((currentTrackPlayer != null) && currentTrackPlayer.isPlaying())
+        if (currentTrackPlayer != null)
             return currentTrackPlayer.getDuration();
         Log.d(TAG,"getDuration() not playing?");
         return 0;
