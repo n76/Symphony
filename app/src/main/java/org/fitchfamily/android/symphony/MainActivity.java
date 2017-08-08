@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private static final String SAVED_GENRE_NAME = "displayGenreName";
     private static final String SAVED_SHUFFLE_MODE = "shuffleMode";
     private static final String SAVED_TRACK_INDEX = "trackIndex";
+    private static final String SAVED_TRACK_POSITION = "trackPosition";
 
     private ArrayList<Genre> genres;        // All information about all genres
     private int displayGenreId = -1;        // The genre the user is looking at
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private int currentShuffleValue = MusicService.PLAY_SEQUENTIAL;
     private String playingGenreName = null;
     private int savedTrackIndex;
+    private int savedTrackPosition;
 
     //
     // View and display related
@@ -201,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     protected void onStop() {
         Log.d(TAG, "onStop() entry.");
         controller.hide();
+        savePreferences();
         super.onStop();
     }
 
@@ -283,6 +286,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicSrv = binder.getService();
             musicSrv.setShuffle(currentShuffleValue);
             shuffleSpinner.setSelection(currentShuffleValue);
+
+            if (displayGenreId >= 0) {
+                musicSrv.setList(genres.get(displayGenreId).getPlaylist());
+                playingGenreId = displayGenreId;
+
+                if (savedTrackIndex >= 0) {
+                    musicSrv.setTrack(savedTrackIndex);
+                    if (savedTrackPosition > 0)
+                        musicSrv.seek(savedTrackPosition);
+                }
+            }
+
+
         }
 
         @Override
@@ -563,7 +579,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             genreSpinner.setSelection(genreIndex);
             if (savedTrackIndex >= 0) {
                 selectDisplayAlbum(savedTrackIndex);
-                songView.setSelection(savedTrackIndex);
             }
         }
     }
@@ -787,23 +802,20 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void savePreferences() {
         Log.d(TAG, "savePreferences() Entry.");
-        SharedPreferences.Editor editor = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE).edit();
 
-        int genreIndex = displayGenreId;
-        int trackIndex = displayTrackIndex;
-        if ((musicSrv != null) && musicSrv.isPlaying()) {
-            genreIndex = displayGenreId;
-            trackIndex = currentlyPlaying;
+        if (musicSrv != null) {
+            SharedPreferences.Editor editor = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE).edit();
+            if (displayGenreId >= 0)
+                editor.putString(SAVED_GENRE_NAME, genres.get(displayGenreId).getName());
+
+            editor.putInt(SAVED_SHUFFLE_MODE, currentShuffleValue);
+            if (currentlyPlaying >= 0)
+                editor.putInt(SAVED_TRACK_INDEX, currentlyPlaying);
+            int trackPosition = musicSrv.getPosition();
+            if (trackPosition > 0)
+                editor.putInt(SAVED_TRACK_POSITION, trackPosition);
+            editor.apply();
         }
-        if (genreIndex >= 0)
-            editor.putString(SAVED_GENRE_NAME, genres.get(genreIndex).getName());
-
-
-        editor.putInt(SAVED_SHUFFLE_MODE, currentShuffleValue);
-        if (trackIndex >= 0)
-            editor.putInt(SAVED_TRACK_INDEX, trackIndex);
-
-        editor.apply();
 
     }
 
@@ -812,6 +824,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         SharedPreferences prefs = getSharedPreferences(SYMPHONY_PREFS_NAME, MODE_PRIVATE);
         playingGenreName = prefs.getString(SAVED_GENRE_NAME, null);
         currentShuffleValue = prefs.getInt(SAVED_SHUFFLE_MODE, MusicService.PLAY_SEQUENTIAL);
-        savedTrackIndex = prefs.getInt(SAVED_TRACK_INDEX, 0);
+        savedTrackIndex = prefs.getInt(SAVED_TRACK_INDEX, -1);
+        savedTrackPosition = prefs.getInt(SAVED_TRACK_POSITION, -1);
     }
 }

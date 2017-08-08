@@ -74,6 +74,14 @@ import java.util.Random;
  *      this, when the user selects a specific track (including going to the previous track)
  *      we need to reset our shuffle index so that it point to the entry in the shuffle list
  *      for the user's desired track.
+ *
+ *  Restoring previous play state
+ *      We would like to allow the overall app to be able to resume whatever album/track they
+ *      were listening to last time the app was run. To do that, we need to be able to distinquish
+ *      between starting a track (preparing it then running from the beginning) and getting a track
+ *      ready for the user to resume if they desire. In the later case we may be told to prepare
+ *      a track and once prepared position the playback but not actually begin to play it. We handle
+ *      that by two values: deferredGo and deferredPosition.
  */
 public class MusicService extends Service implements
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener,
@@ -276,6 +284,11 @@ public class MusicService extends Service implements
     private final IBinder musicBind = new MusicBinder();
     private boolean noisyReceiverRegistered=false;
 
+    // Stuff to allow us to defer requested operations (like starting a track after it
+    // has been prepared or positioning the playback point.
+    private boolean deferredGo;
+    private int deferredPosition;
+
     // For "gap-less playback" we setup a second "on-deck" player ready to go. When the
     // current player says it is finished, we start the on-deck player and release the
     // old player.
@@ -285,7 +298,10 @@ public class MusicService extends Service implements
         Log.d(TAG,"onCreate() entry.");
 
         currentTrackPlayer = null;
-        onDeckTrackPlayer = null;;
+        onDeckTrackPlayer = null;
+
+        deferredPosition = -1;
+        deferredGo = false;
 
         playingIndexInfo = new IndexInfo();
         onDeckIndexInfo = new IndexInfo();
@@ -435,29 +451,18 @@ public class MusicService extends Service implements
                 playingIndexInfo = onDeckIndexInfo;
 
                 onDeckTrackPlayer = null;
-                if (!haveAudioFocus) {
-                    int result = am.requestAudioFocus(afChangeListener,
-                            // Use the music stream.
-                            AudioManager.STREAM_MUSIC,
-                            // Request permanent focus.
-                            AudioManager.AUDIOFOCUS_GAIN);
-                    haveAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-                }
-                if (haveAudioFocus) {
-                    if (!noisyReceiverRegistered)
-                        registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
-                    noisyReceiverRegistered = true;
-                    currentTrackPlayer.start();
-                    setupForegroundNotification();
-                    notifyMainActivity(SERVICE_NOW_PLAYING);
-                    addToHistory(playingIndexInfo.getTrackIndex());
+                if (deferredPosition > 0)
+                    currentTrackPlayer.seekTo(deferredPosition);
+                deferredPosition = -1;
+                if (deferredGo)
+                    this.go();
+                notifyMainActivity(SERVICE_NOW_PLAYING);
 
-                    // Setup an "on Deck" player for the next track to play
-                    onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                    onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
-                } else {
-                    Log.d(TAG, "onPrepared(): Unable to get audio focus!");
-                }
+                addToHistory(playingIndexInfo.getTrackIndex());
+
+                // Setup an "on Deck" player for the next track to play
+                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
             } else {
                 // We are currently playing a track. Set the on deck track to play when
                 // current track is done.
@@ -468,12 +473,20 @@ public class MusicService extends Service implements
 
     public synchronized void playTrack(int trackIndex) {
         Log.d(TAG,"playTrack("+trackIndex+") entry.");
+        setTrack(trackIndex);
+        deferredGo = true;
+    }
+
+    public synchronized void setTrack(int trackIndex) {
+        Log.d(TAG,"setTrack("+trackIndex+") entry.");
         resetToInitialState();
+        deferredGo = false;
         onDeckIndexInfo.setTrackIndex(trackIndex);
         onDeckIndexInfo.setShuffleToTrack();
         playingIndexInfo = onDeckIndexInfo;
         onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-        onDeckTrackPlayer = prepareTrack(trackIndex);    }
+        onDeckTrackPlayer = prepareTrack(trackIndex);
+    }
 
     // Private version of play track skips setting the shuffle
     // index to the selected track.
@@ -536,14 +549,19 @@ public class MusicService extends Service implements
     }
 
     public synchronized void seek(int posn){
-        Log.d(TAG,"seek() entry.");
+        Log.d(TAG,"seek("+posn+") entry.");
         if (currentTrackPlayer != null)
             currentTrackPlayer.seekTo(posn);
+        else {
+            deferredPosition = posn;
+            Log.d(TAG, "seek() deferredPosition set to " + posn);
+        }
     }
 
-    public synchronized void go(){
+    public synchronized void go() {
         Log.d(TAG,"go() entry.");
         if (currentTrackPlayer != null) {
+            deferredGo = false;
             if (!haveAudioFocus) {
                 int result = am.requestAudioFocus(afChangeListener,
                         // Use the music stream.
@@ -559,7 +577,8 @@ public class MusicService extends Service implements
                 setupForegroundNotification();
                 notifyMainActivity(SERVICE_NOW_PLAYING);
             }
-        }
+        } else
+            deferredGo = true;
     }
 
     public synchronized void playPrev(){
