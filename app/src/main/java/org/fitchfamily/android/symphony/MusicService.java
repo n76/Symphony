@@ -493,6 +493,7 @@ public class MusicService extends Service implements
     private void _playTrack(int trackIndex) {
         Log.d(TAG,"_playTrack("+trackIndex+") entry.");
         resetToInitialState();
+        deferredGo = true;
         onDeckIndexInfo.setTrackIndex(trackIndex);
         playingIndexInfo = onDeckIndexInfo;
         onDeckIndexInfo = new IndexInfo(playingIndexInfo);
