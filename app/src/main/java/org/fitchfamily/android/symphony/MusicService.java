@@ -27,14 +27,20 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.session.MediaSessionManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.RemoteException;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.util.Log;
 
 import java.util.Arrays;
@@ -96,6 +102,11 @@ public class MusicService extends Service implements
 
 
     private static final String TAG = "Symphony:MusicService";
+
+    //MediaSession
+    private MediaSessionManager mediaSessionManager;
+    private MediaSessionCompat mediaSession;
+    // private MediaControllerCompat.TransportControls transportControls;
 
     // For Audio "Focus", support pausing or reducing volume with other apps
     // wish to use audio output (alerts, etc.)
@@ -274,8 +285,9 @@ public class MusicService extends Service implements
     private int historyPosition;        // Current location in history
     private boolean historyInhibit;     // Hack to keep from prev play adding to history.
 
-    private String songTitle="";
-    private String songAlbum="";
+    private String trackTitle ="";
+    private String trackAlbum ="";
+    private String trackArtist ="";
     private static final int NOTIFY_ID=1;
 
     private int shuffle=PLAY_RANDOM_ALBUM;
@@ -312,12 +324,26 @@ public class MusicService extends Service implements
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG,"onStartCommand() entry.");
+        if (mediaSessionManager == null) {
+            try {
+                initMediaSession();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                stopSelf();
+            }
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public void onDestroy() {
         Log.d(TAG,"onDestroy() entry.");
         resetToInitialState();
         stopForeground(true);
+        super.onDestroy();
     }
-
 
     public void setList(ArrayList<Song> theSongs){
         Log.d(TAG,"setList() entry.");
@@ -416,6 +442,7 @@ public class MusicService extends Service implements
                 playingIndexInfo = onDeckIndexInfo;
                 setupForegroundNotification();
                 notifyMainActivity(SERVICE_NOW_PLAYING);
+                updateMetaData();
                 addToHistory(playingIndexInfo.getTrackIndex());
 
                 // Setup an "on Deck" player for the next track to play
@@ -456,7 +483,8 @@ public class MusicService extends Service implements
                 deferredPosition = -1;
                 if (deferredGo)
                     this.go();
-                notifyMainActivity(SERVICE_NOW_PLAYING);
+                else
+                    notifyMainActivity(SERVICE_PAUSED);
 
                 addToHistory(playingIndexInfo.getTrackIndex());
 
@@ -577,6 +605,7 @@ public class MusicService extends Service implements
                 currentTrackPlayer.start();
                 setupForegroundNotification();
                 notifyMainActivity(SERVICE_NOW_PLAYING);
+                updateMetaData();
             }
         } else
             deferredGo = true;
@@ -616,8 +645,9 @@ public class MusicService extends Service implements
         MediaPlayer mp = initTrackPlayer();
         Song songToPlay = songs.get(trackIndex);    //get song info
         long currSong = songToPlay.getId();           //set uri
-        songTitle = songToPlay.getTitle();            //set title
-        songAlbum = songToPlay.getAlbum();
+        trackTitle = songToPlay.getTitle();            //set title
+        trackAlbum = songToPlay.getAlbum();
+        trackArtist = songToPlay.getArtist();
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
@@ -641,15 +671,15 @@ public class MusicService extends Service implements
 
         Notification.Builder builder = new Notification.Builder(this);
         String contentTitle = "Playing";
-        if (songTitle.compareTo(songAlbum) != 0)
-            contentTitle = songAlbum;
+        if (trackTitle.compareTo(trackAlbum) != 0)
+            contentTitle = trackAlbum;
 
         builder.setContentIntent(pendInt)
                 .setSmallIcon(R.drawable.play)
-                .setTicker(songTitle)
+                .setTicker(trackTitle)
                 .setOngoing(true)
                 .setContentTitle(contentTitle)
-                .setContentText(songTitle);
+                .setContentText(trackTitle);
         Notification notify = builder.build();
 
         startForeground(NOTIFY_ID, notify);
@@ -733,6 +763,83 @@ public class MusicService extends Service implements
             if (historyPosition >= history.length)
                 historyPosition = 0;
             history[historyPosition] = trackIndex;
+        }
+    }
+
+    // Media Session stuff
+
+    private void initMediaSession() throws RemoteException {
+        Log.d(TAG, "initMediaSession() entry.");
+        if (mediaSessionManager != null)
+            return; //mediaSessionManager exists
+
+        mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
+        // Create a new MediaSession
+        mediaSession = new MediaSessionCompat(getApplicationContext(), "AudioPlayer");
+        //Get MediaSessions transport controls
+        // transportControls = mediaSession.getController().getTransportControls();
+        //set MediaSession -> ready to receive media commands
+        mediaSession.setActive(true);
+        //indicate that the MediaSession handles transport control commands
+        // through its MediaSessionCompat.Callback.
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+
+        //Set mediaSession's MetaData
+        updateMetaData();
+
+        // Attach Callback to receive MediaSession updates
+        mediaSession.setCallback(new MediaSessionCompat.Callback() {
+            // Implement callbacks
+            @Override
+            public void onPlay() {
+                super.onPlay();
+                go();
+            }
+
+            @Override
+            public void onPause() {
+                super.onPause();
+                pausePlayer();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+                playNext();
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                super.onSkipToPrevious();
+                playPrev();
+            }
+
+            @Override
+            public void onStop() {
+                super.onStop();
+                //Stop the service
+                stopSelf();
+            }
+
+            @Override
+            public void onSeekTo(long position) {
+                super.onSeekTo(position);
+            }
+        });
+    }
+
+    private void updateMetaData() {
+        Log.d(TAG, "updateMetaData() entry.");
+        if (currentTrackPlayer != null) {
+            Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
+                    R.drawable.violin_icon); //replace with medias albumArt
+            // Update the current metadata
+            mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, trackArtist)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, trackAlbum)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, trackTitle)
+                    .build());
         }
     }
 }

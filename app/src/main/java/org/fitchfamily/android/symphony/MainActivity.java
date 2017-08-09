@@ -121,26 +121,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private BroadcastReceiver servicePlayingUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "servicePlayingUpdateReceiver.onReceive()");
-            switch (intent.getAction()) {
+            String mAction = intent.getAction();
+            Log.d(TAG, "servicePlayingUpdateReceiver.onReceive("+mAction+")");
+
+            switch (mAction) {
                 case MusicService.SERVICE_NOW_PLAYING:
-                    Log.d(TAG, "servicePlayingUpdateReceiver.onReceive().SERVICE_NOW_PLAYING");
-                    currentlyPlaying = intent.getIntExtra("songIndex",0);
+                case MusicService.SERVICE_PAUSED:
                     if (controller != null)
                         controller.show();
+                    currentlyPlaying = intent.getIntExtra("songIndex",0);
                     if (displayGenreId == playingGenreId) {
                         selectDisplayAlbum(currentlyPlaying);
                         songView.setSelection(currentlyPlaying);
                     }
                     break;
 
-                case MusicService.SERVICE_PAUSED:
-                    Log.d(TAG, "servicePlayingUpdateReceiver.onReceive().SERVICE_PAUSED");
-                    if (controller != null) {
-                        controller.show();
-                        // FIXME: somehow tell controller to show paused
-                    }
-                    break;
+                default:
+                    Log.d(TAG, "servicePlayingUpdateReceiver.onReceive() Unknown action");
             }
         }
     };

@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Not applicable
+- Support for media session (allows other apps to see/control what is playing).
 
 ### Changed
 - Not applicable
