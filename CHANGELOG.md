@@ -6,13 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Not applicable
+
+### Changed
+- Not applicable
+
+### Removed
+- Not applicable
+
+## [1.0.3] 2017-08-08
+### Added
 - Resolve Issue 3: Remember last track and position in last track when starting app.
 
 ### Changed
 - Fix issue 4: Switching between portrait and landscape while playing causes ⏸ to become ▶
-
-### Removed
-- Not applicable
 
 ## [1.0.2] 2017-08-06
 ### Added
