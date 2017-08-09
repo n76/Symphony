@@ -251,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     songView.setSelection(savedTrackIndex);
             }
         }
+        if ((musicSrv != null) && musicSrv.hasTrack())
+            controller.show();
     }
 
     //
