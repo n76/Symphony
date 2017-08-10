@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Support for media session (allows other apps to see/control what is playing).
 
 ### Changed
-- Not applicable
+- Fixed bug where notification bar show next track info instead of current track info.
 
 ### Removed
 - Not applicable

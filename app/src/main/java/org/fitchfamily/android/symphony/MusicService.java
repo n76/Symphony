@@ -30,8 +30,11 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
+import android.media.MediaMetadata;
 import android.media.MediaPlayer;
+import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -39,14 +42,12 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.util.Log;
 
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.StringTokenizer;
+
 
 /**
  * Created by tfitch on 7/6/17.
@@ -106,7 +107,7 @@ public class MusicService extends Service implements
 
     //MediaSession
     private MediaSessionManager mediaSessionManager;
-    private MediaSessionCompat mediaSession;
+    private MediaSession mediaSession;
     // private MediaControllerCompat.TransportControls transportControls;
 
     // For Audio "Focus", support pausing or reducing volume with other apps
@@ -440,9 +441,7 @@ public class MusicService extends Service implements
             if (currentTrackPlayer != null) {
                 Log.d(TAG,"onCompletion() next track prepared, starting immediately.");
                 playingIndexInfo = onDeckIndexInfo;
-                setupForegroundNotification();
-                notifyMainActivity(SERVICE_NOW_PLAYING);
-                updateMetaData();
+                tellTheWorld(SERVICE_NOW_PLAYING);
                 addToHistory(playingIndexInfo.getTrackIndex());
 
                 // Setup an "on Deck" player for the next track to play
@@ -482,7 +481,7 @@ public class MusicService extends Service implements
                 if (deferredGo)
                     this.go();
                 else
-                    notifyMainActivity(SERVICE_PAUSED);
+                    tellTheWorld(SERVICE_PAUSED);
 
                 addToHistory(playingIndexInfo.getTrackIndex());
 
@@ -544,7 +543,7 @@ public class MusicService extends Service implements
         Log.d(TAG,"pausePlayer() entry.");
         if (currentTrackPlayer != null) {
             currentTrackPlayer.pause();
-            notifyMainActivity(SERVICE_PAUSED);
+            tellTheWorld(SERVICE_PAUSED);
         }
         try {
             if (noisyReceiverRegistered)
@@ -587,9 +586,7 @@ public class MusicService extends Service implements
                 registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
                 noisyReceiverRegistered = true;
                 currentTrackPlayer.start();
-                setupForegroundNotification();
-                notifyMainActivity(SERVICE_NOW_PLAYING);
-                updateMetaData();
+                tellTheWorld(SERVICE_NOW_PLAYING);
             }
         } else
             deferredGo = true;
@@ -678,6 +675,18 @@ public class MusicService extends Service implements
         Notification notify = builder.build();
 
         startForeground(NOTIFY_ID, notify);
+    }
+
+    private void tellTheWorld(String status) {
+        boolean isPlaying = SERVICE_NOW_PLAYING.equals(status);
+        Log.d(TAG,"tellTheWorld("+status+") isPlaying="+isPlaying);
+
+        notifyMainActivity(status);
+        setMediaSessionState(isPlaying);
+        if (isPlaying) {
+            setupForegroundNotification();
+            updateMetaData();
+        }
     }
 
     private void notifyMainActivity(String status) {
@@ -773,20 +782,20 @@ public class MusicService extends Service implements
 
         mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
         // Create a new MediaSession
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "AudioPlayer");
+        mediaSession = new MediaSession(getApplicationContext(), "SymphonyAudioPlayer");
         //Get MediaSessions transport controls
         // transportControls = mediaSession.getController().getTransportControls();
         //set MediaSession -> ready to receive media commands
         mediaSession.setActive(true);
         //indicate that the MediaSession handles transport control commands
         // through its MediaSessionCompat.Callback.
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
         //Set mediaSession's MetaData
         updateMetaData();
 
         // Attach Callback to receive MediaSession updates
-        mediaSession.setCallback(new MediaSessionCompat.Callback() {
+        mediaSession.setCallback(new MediaSession.Callback() {
             // Implement callbacks
             @Override
             public void onPlay() {
@@ -824,6 +833,33 @@ public class MusicService extends Service implements
                 super.onSeekTo(position);
             }
         });
+
+        PlaybackState state = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY)
+                .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                .build();
+        mediaSession.setPlaybackState(state);
+
+        mediaSession.setActive(true);
+    }
+
+    private void setMediaSessionState(boolean isPlaying) {
+        Log.d(TAG, "setMediaSessionState("+isPlaying+") entry.");
+        if (isPlaying) {
+            PlaybackState state = new PlaybackState.Builder()
+                    .setActions(PlaybackState.ACTION_PAUSE |
+                            PlaybackState.ACTION_SKIP_TO_NEXT |
+                            PlaybackState.ACTION_SKIP_TO_PREVIOUS )
+                    .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                    .build();
+            mediaSession.setPlaybackState(state);
+        } else {
+            PlaybackState state = new PlaybackState.Builder()
+                    .setActions(PlaybackState.ACTION_PLAY)
+                    .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                    .build();
+            mediaSession.setPlaybackState(state);
+        }
     }
 
     private void updateMetaData() {
@@ -839,11 +875,11 @@ public class MusicService extends Service implements
             Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
                     R.drawable.violin_icon); //replace with medias albumArt
             // Update the current metadata
-            mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, trackArtist)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, trackAlbum)
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, trackTitle)
+            mediaSession.setMetadata(new MediaMetadata.Builder()
+                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, albumArt)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, trackArtist)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, trackAlbum)
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, trackTitle)
                     .build());
 
             Log.d(TAG, "updateMetaData() trackAlbum="+trackAlbum);
