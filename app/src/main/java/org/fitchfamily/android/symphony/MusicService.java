@@ -46,6 +46,7 @@ import android.util.Log;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.StringTokenizer;
 
 /**
  * Created by tfitch on 7/6/17.
@@ -190,32 +191,38 @@ public class MusicService extends Service implements
 
         public IndexInfo() {
             trackIndex = 0;
-            shuffleIndex = 0;
+            shuffleIndex = setShuffleToTrack(trackIndex);
+        }
+
+        public IndexInfo(int track) {
+            trackIndex = track;
+            shuffleIndex = setShuffleToTrack(trackIndex);
         }
 
         public IndexInfo(IndexInfo prevIndex) {
-            trackIndex = prevIndex.getTrackIndex();
             shuffleIndex = prevIndex.getShuffleIndex();
+            trackIndex = nextTrackIndex(prevIndex.getTrackIndex());
+            shuffleIndex = setShuffleToTrack(trackIndex);
         }
 
         public int getTrackIndex() {
             return trackIndex;
         }
 
+        public void shuffleChanged() {
+            shuffleIndex = setShuffleToTrack(trackIndex);
+        }
+
         public int getShuffleIndex() {
             return shuffleIndex;
         }
 
-        public void setTrackIndex(int newTrackIndex) {
-            trackIndex = newTrackIndex;
-        }
-
-        public void setShuffleToTrack() {
+        private int setShuffleToTrack(int currentIndex) {
+            int rslt = currentIndex;
             switch (shuffle) {
                 case PLAY_RANDOM_SONG:
                     if (songOrder != null) {
-                        shuffleIndex = Arrays.asList(songOrder).indexOf(trackIndex);
-                        Log.d(TAG, "IndexInfo.setShuffleToTrack() PLAY_RANDOM_SONG song=" + trackIndex + ", shuffle=" + shuffleIndex);
+                        rslt = Arrays.asList(songOrder).indexOf(currentIndex);
                     }
                     break;
 
@@ -230,64 +237,54 @@ public class MusicService extends Service implements
                             }
                         }
 
-                        shuffleIndex = Arrays.asList(albumOrder).indexOf(currentAlbumIndex);
-                        Log.d(TAG, "IndexInfo.setShuffleToTrack() PLAY_RANDOM_ALBUM song=" + trackIndex + ", album="+currentAlbumIndex+", shuffle=" + shuffleIndex);
+                        rslt = Arrays.asList(albumOrder).indexOf(currentAlbumIndex);
                         break;
                     }
             }
+            return rslt;
         }
 
-        public int nextTrackIndex() {
+        private int nextTrackIndex(int currentIndex) {
+            int rslt = currentIndex + 1;
             switch (shuffle){
                 case PLAY_SEQUENTIAL:
-                    Log.d(TAG,"IndexInfo.nextTrackIndex() PLAY_SEQUENTIAL.");
-                    trackIndex++;
-                    if(trackIndex >=songs.size())
-                        trackIndex =0;
+                    if(rslt >=songs.size())
+                        rslt =0;
                     break;
 
                 case PLAY_RANDOM_SONG:
                     shuffleIndex++;
                     if (shuffleIndex >= songs.size())
                         shuffleIndex=0;
-                    trackIndex = songOrder[shuffleIndex];
-                    Log.d(TAG,"IndexInfo.nextTrackIndex() PLAY_RANDOM_SONG. shuffle="+shuffleIndex+", song="+ trackIndex);
+                    rslt = songOrder[shuffleIndex];
                     break;
 
                 case PLAY_RANDOM_ALBUM:
-                    Log.d(TAG,"IndexInfo.nextTrackIndex() PLAY_RANDOM_ALBUM.");
-                    long curentAlbum = songs.get(trackIndex).getAlbumId();
-                    Log.d(TAG,"IndexInfo.nextTrackIndex() Next sequential track.");
-                    trackIndex++;
-                    if(trackIndex >=songs.size())
-                        trackIndex =0;
-                    long nextAlbum = songs.get(trackIndex).getAlbumId();
+                    long curentAlbum = songs.get(currentIndex).getAlbumId();
+                    if(rslt >=songs.size()) {
+                        rslt = 0;
+                    }
+                    long nextAlbum = songs.get(rslt).getAlbumId();
 
                     if (curentAlbum != nextAlbum) {
-                        Log.d(TAG,"IndexInfo.nextTrackIndex() New album detected, select random.");
                         shuffleIndex++;
                         if (shuffleIndex >= albums.size())
                             shuffleIndex=0;
                         int newAlbum = albumOrder[shuffleIndex];
-                        trackIndex = albums.get(newAlbum).getTrack();
-                        Log.d(TAG,"IndexInfo.nextTrackIndex() PLAY_RANDOM_ALBUM. shuffle="+shuffleIndex+
-                                ", newAlbum="+newAlbum+", song="+ trackIndex);
+                        rslt = albums.get(newAlbum).getTrack();
                     }
                     break;
             }
-            return trackIndex;
+            return rslt;
         };
     }
-    public IndexInfo playingIndexInfo;
-    public IndexInfo onDeckIndexInfo;
+    public IndexInfo playingIndexInfo;  // Information and control of currently playing track
+    public IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
 
     private int[] history;              // Recently played tracks
     private int historyPosition;        // Current location in history
     private boolean historyInhibit;     // Hack to keep from prev play adding to history.
 
-    private String trackTitle ="";
-    private String trackAlbum ="";
-    private String trackArtist ="";
     private static final int NOTIFY_ID=1;
 
     private int shuffle=PLAY_RANDOM_ALBUM;
@@ -315,8 +312,8 @@ public class MusicService extends Service implements
         deferredPosition = -1;
         deferredGo = false;
 
-        playingIndexInfo = new IndexInfo();
-        onDeckIndexInfo = new IndexInfo();
+        playingIndexInfo = null;
+        onDeckIndexInfo = null;
 
         resetHistory();
         rand=new Random();
@@ -347,13 +344,14 @@ public class MusicService extends Service implements
 
     public void setList(ArrayList<Song> theSongs){
         Log.d(TAG,"setList() entry.");
+        resetToInitialState();
         songs=theSongs;
         albums=Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
         albumOrder = genPlayOrder(albums.size());
         resetHistory();
-        playingIndexInfo = new IndexInfo();
-        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+        playingIndexInfo = null;
+        onDeckIndexInfo = new IndexInfo();;
     }
 
     public synchronized void setShuffle(int playMode){
@@ -385,14 +383,15 @@ public class MusicService extends Service implements
                     // Set the new play mode and set the shuffle index to select
                     // the current track.
                     shuffle = playMode;
-                    playingIndexInfo.setShuffleToTrack();
+                    if (playingIndexInfo != null)
+                        playingIndexInfo.shuffleChanged();
 
                     // If we are playing something, then prepare the next track
                     // using the new play mode.
                     if (currentTrackPlayer != null) {
                         onDeckIndexInfo = new IndexInfo(playingIndexInfo);
                         currentTrackPlayer.setNextMediaPlayer(null);
-                        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
+                        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
                     }
                     break;
 
@@ -437,6 +436,7 @@ public class MusicService extends Service implements
             currentTrackPlayer.reset();
             currentTrackPlayer.release();
             currentTrackPlayer = onDeckTrackPlayer;
+            onDeckTrackPlayer = null;
             if (currentTrackPlayer != null) {
                 Log.d(TAG,"onCompletion() next track prepared, starting immediately.");
                 playingIndexInfo = onDeckIndexInfo;
@@ -447,10 +447,7 @@ public class MusicService extends Service implements
 
                 // Setup an "on Deck" player for the next track to play
                 onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
-            } else {
-                Log.d(TAG,"onCompletion() Preparing next track.");
-                currentTrackPlayer = prepareTrack(playingIndexInfo.nextTrackIndex());
+                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
             }
         }
     }
@@ -476,11 +473,12 @@ public class MusicService extends Service implements
                 //
                 currentTrackPlayer = onDeckTrackPlayer;
                 playingIndexInfo = onDeckIndexInfo;
-
                 onDeckTrackPlayer = null;
+
                 if (deferredPosition > 0)
                     currentTrackPlayer.seekTo(deferredPosition);
                 deferredPosition = -1;
+
                 if (deferredGo)
                     this.go();
                 else
@@ -490,7 +488,7 @@ public class MusicService extends Service implements
 
                 // Setup an "on Deck" player for the next track to play
                 onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.nextTrackIndex());
+                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
             } else {
                 // We are currently playing a track. Set the on deck track to play when
                 // current track is done.
@@ -509,22 +507,8 @@ public class MusicService extends Service implements
         Log.d(TAG,"setTrack("+trackIndex+") entry.");
         resetToInitialState();
         deferredGo = false;
-        onDeckIndexInfo.setTrackIndex(trackIndex);
-        onDeckIndexInfo.setShuffleToTrack();
-        playingIndexInfo = onDeckIndexInfo;
-        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-        onDeckTrackPlayer = prepareTrack(trackIndex);
-    }
-
-    // Private version of play track skips setting the shuffle
-    // index to the selected track.
-    private void _playTrack(int trackIndex) {
-        Log.d(TAG,"_playTrack("+trackIndex+") entry.");
-        resetToInitialState();
-        deferredGo = true;
-        onDeckIndexInfo.setTrackIndex(trackIndex);
-        playingIndexInfo = onDeckIndexInfo;
-        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+        playingIndexInfo = null;
+        onDeckIndexInfo = new IndexInfo(trackIndex);
         onDeckTrackPlayer = prepareTrack(trackIndex);
     }
 
@@ -633,7 +617,10 @@ public class MusicService extends Service implements
     //skip to next
     public synchronized void playNext(){
         Log.d(TAG,"playNext() entry.");
-        _playTrack(playingIndexInfo.nextTrackIndex());
+        resetToInitialState();
+        deferredGo = true;
+        playingIndexInfo = null;
+        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
     }
 
     //
@@ -645,9 +632,7 @@ public class MusicService extends Service implements
         MediaPlayer mp = initTrackPlayer();
         Song songToPlay = songs.get(trackIndex);    //get song info
         long currSong = songToPlay.getId();           //set uri
-        trackTitle = songToPlay.getTitle();            //set title
-        trackAlbum = songToPlay.getAlbum();
-        trackArtist = songToPlay.getArtist();
+
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
@@ -670,6 +655,16 @@ public class MusicService extends Service implements
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder builder = new Notification.Builder(this);
+        String trackTitle = "Unknown";
+        String trackAlbum = "Unknown";
+
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
+
+            trackTitle = songToPlay.getTitle();            //set title
+            trackAlbum = songToPlay.getAlbum();
+
+        }
         String contentTitle = "Playing";
         if (trackTitle.compareTo(trackAlbum) != 0)
             contentTitle = trackAlbum;
@@ -686,10 +681,13 @@ public class MusicService extends Service implements
     }
 
     private void notifyMainActivity(String status) {
-        Log.d(TAG,"notifyMainActivity() entry.");
+        Log.d(TAG,"notifyMainActivity("+status+") entry.");
         // Let the Main Activity know we are playing the song.
         Intent playingIntent = new Intent(status);
-        playingIntent.putExtra("songIndex", playingIndexInfo.getTrackIndex());
+        int trackIndex = 0;
+        if (playingIndexInfo != null)
+            trackIndex = playingIndexInfo.getTrackIndex();
+        playingIntent.putExtra("songIndex", trackIndex);
         LocalBroadcastManager.getInstance(this).sendBroadcast(playingIntent);
     }
 
@@ -830,7 +828,14 @@ public class MusicService extends Service implements
 
     private void updateMetaData() {
         Log.d(TAG, "updateMetaData() entry.");
-        if (currentTrackPlayer != null) {
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
+
+            String trackTitle = songToPlay.getTitle();            //set title
+            String trackAlbum = songToPlay.getAlbum();
+            String trackArtist = songToPlay.getArtist();
+
+
             Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
                     R.drawable.violin_icon); //replace with medias albumArt
             // Update the current metadata
@@ -840,6 +845,10 @@ public class MusicService extends Service implements
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, trackAlbum)
                     .putString(MediaMetadataCompat.METADATA_KEY_TITLE, trackTitle)
                     .build());
+
+            Log.d(TAG, "updateMetaData() trackAlbum="+trackAlbum);
+            Log.d(TAG, "updateMetaData() trackTitle="+trackTitle);
+            Log.d(TAG, "updateMetaData() trackArtist="+trackArtist);
         }
     }
 }
