@@ -6,13 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Support for media session (allows other apps to see/control what is playing).
+- Not applicable
 
 ### Changed
-- Fixed bug where notification bar show next track info instead of current track info.
+- Not applicable
 
 ### Removed
 - Not applicable
+
+## [1.1.0] 2017-08-10
+### Added
+- Support for media session (allows other apps to see/control what is playing). Specifically, if plugged into a car entertainment system the current track information should be shown on the display and the previous and next track buttons, etc. on the car should control the app.
+
+### Changed
+- Fixed bug where notification bar show next track info instead of current track info.
 
 ## [1.0.3] 2017-08-08
 ### Added
