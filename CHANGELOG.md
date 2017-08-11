@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Show album, track and artist in notification.
 
 ### Changed
-- Not applicable
+- Swap artist and album information published to other apps on phone if in random album mode. See issue 5.
 
 ### Removed
 - Not applicable
