@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Not applicable
+- Show album, track and artist in notification.
 
 ### Changed
 - Not applicable

@@ -652,28 +652,24 @@ public class MusicService extends Service implements
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder builder = new Notification.Builder(this);
-        String trackTitle = "Unknown";
-        String trackAlbum = "Unknown";
+
+        builder.setContentIntent(pendInt)
+                .setSmallIcon(R.drawable.play)
+                .setOngoing(true);
 
         if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
             Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
 
-            trackTitle = songToPlay.getTitle();            //set title
-            trackAlbum = songToPlay.getAlbum();
+            String trackTitle = songToPlay.getTitle();            //set title
+            String trackAlbum = songToPlay.getAlbum();
 
+            builder.setTicker(trackTitle)
+                    .setContentTitle(songToPlay.getArtist())
+                    .setContentText(trackTitle);
+            if (trackTitle.compareTo(trackAlbum) != 0)
+                builder.setSubText(trackAlbum);
         }
-        String contentTitle = "Playing";
-        if (trackTitle.compareTo(trackAlbum) != 0)
-            contentTitle = trackAlbum;
-
-        builder.setContentIntent(pendInt)
-                .setSmallIcon(R.drawable.play)
-                .setTicker(trackTitle)
-                .setOngoing(true)
-                .setContentTitle(contentTitle)
-                .setContentText(trackTitle);
         Notification notify = builder.build();
-
         startForeground(NOTIFY_ID, notify);
     }
 
