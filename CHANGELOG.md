@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Swap artist and album information published to other apps on phone if in random album mode. See issue 5.
+- Avoid crash on start on some conditions where the local music on the phone has been changed.
 
 ### Removed
 - Not applicable

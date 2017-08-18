@@ -219,7 +219,7 @@ public class MusicService extends Service implements
         }
 
         private int setShuffleToTrack(int currentIndex) {
-            int rslt = currentIndex;
+            int rslt = 0;
             switch (shuffle) {
                 case PLAY_RANDOM_SONG:
                     if (songOrder != null) {
@@ -228,20 +228,26 @@ public class MusicService extends Service implements
                     break;
 
                 case PLAY_RANDOM_ALBUM:
-                    if (albumOrder != null) {
-                        int currentAlbumIndex = -1;
-                        Long currentAlbumId = songs.get(trackIndex).getAlbumId();
-                        for (int i = 0; i < albums.size(); i++) {
-                            if (currentAlbumId == albums.get(i).getID()) {
-                                currentAlbumIndex = i;
-                                break;
+                    if (currentIndex >= songs.size()) {
+                        rslt = 0;
+                    } else {
+                        if (albumOrder != null) {
+                            int currentAlbumIndex = -1;
+                            Long currentAlbumId = songs.get(currentIndex).getAlbumId();
+                            for (int i = 0; i < albums.size(); i++) {
+                                if (currentAlbumId == albums.get(i).getID()) {
+                                    currentAlbumIndex = i;
+                                    break;
+                                }
                             }
-                        }
 
-                        rslt = Arrays.asList(albumOrder).indexOf(currentAlbumIndex);
-                        break;
+                            rslt = Arrays.asList(albumOrder).indexOf(currentAlbumIndex);
+                            break;
+                        }
                     }
             }
+            if (rslt < 0)
+                rslt = 0;
             return rslt;
         }
 
@@ -498,17 +504,25 @@ public class MusicService extends Service implements
 
     public synchronized void playTrack(int trackIndex) {
         Log.d(TAG,"playTrack("+trackIndex+") entry.");
-        setTrack(trackIndex);
-        deferredGo = true;
+        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
+            setTrack(trackIndex);
+            deferredGo = true;
+        } else {
+            Log.d(TAG,"playTrack("+trackIndex+") index out of bounds, max="+songs.size());
+        }
     }
 
     public synchronized void setTrack(int trackIndex) {
         Log.d(TAG,"setTrack("+trackIndex+") entry.");
-        resetToInitialState();
-        deferredGo = false;
-        playingIndexInfo = null;
-        onDeckIndexInfo = new IndexInfo(trackIndex);
-        onDeckTrackPlayer = prepareTrack(trackIndex);
+        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
+            resetToInitialState();
+            deferredGo = false;
+            playingIndexInfo = null;
+            onDeckIndexInfo = new IndexInfo(trackIndex);
+            onDeckTrackPlayer = prepareTrack(trackIndex);
+        } else {
+            Log.d(TAG,"setTrack("+trackIndex+") index out of bounds, max="+songs.size());
+        }
     }
 
     // Items needed to support media controller calls from main activity.
