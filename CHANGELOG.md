@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 - Not applicable
 
+## [1.1.2] 2018-01-31
+### Changed
+- Change "random" to "shuffle" on spinner to more accurately describe what it does.
+- Change min SDK version to 10 (allow to run on Android Gingerbread 2.3.3 and later).
+
 ## [1.1.1] 2017-08-18
 ### Added
 - Show album, track and artist in notification.
