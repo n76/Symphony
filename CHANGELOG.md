@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 - Not applicable
 
+## [1.1.3] 2018-05-25
+### Changed
+- Revised icons. Thanks to @mansya
+- Gradle version changed
+
 ## [1.1.2] 2018-01-31
 ### Changed
 - Change "random" to "shuffle" on spinner to more accurately describe what it does.
@@ -55,7 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.0.0] - 2017-07-27
 ### Added
-- Japanese Translation
+- Japanese Translation. Thanks to @naofum
 
 ### Changed
 - Avoid crash on empty genre
