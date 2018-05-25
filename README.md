@@ -1,6 +1,6 @@
 Symphony - A music player for Android
 =====================================
-
+<img src="Logotype Primaryyy.png" width="60%" height="60%" />
 Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs (movements) played in the correct order.
 
 Features
