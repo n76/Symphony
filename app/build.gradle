@@ -4,7 +4,7 @@ android {
     compileSdkVersion 25
     defaultConfig {
         applicationId "org.fitchfamily.android.symphony"
-        minSdkVersion 10
+        minSdkVersion 21
         targetSdkVersion 25
         versionCode 11
         versionName "1.1.3"

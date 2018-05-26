@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Not applicable
+- Display artwork from track on lock screen if track has artwork.
 
 ### Changed
-- Not applicable
+- Minimum API changed to 21 (LOLLIPOP). Not sure how it was being compiled before as media manager calls require API 21.
 
 ### Removed
 - Not applicable
