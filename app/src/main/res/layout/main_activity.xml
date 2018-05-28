@@ -3,8 +3,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
-
-    tools:context=".MainActivity" >
+    tools:context=".MainActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
@@ -13,11 +12,12 @@
         android:background="?attr/colorPrimary"
         android:minHeight="?attr/actionBarSize"
         android:titleTextColor="#ffffff">
+
         <Spinner
             android:id="@+id/shuffle_select"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:entries="@array/play_select"/>
+            android:entries="@array/play_select" />
     </android.support.v7.widget.Toolbar>
 
     <Spinner
@@ -37,7 +37,13 @@
     <ListView
         android:id="@+id/song_list"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" >
-    </ListView>
+        android:layout_height="wrap_content" />
+
+    <!-- An item to anchor our media controller to below
+         the list of songs. -->
+    <TextView
+        android:id="@+id/controller_location"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
 
 </LinearLayout>

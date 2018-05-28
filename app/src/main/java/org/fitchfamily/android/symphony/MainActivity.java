@@ -378,7 +378,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
             controller.setMediaPlayer(this);
         }
-        controller.setAnchorView(findViewById(R.id.song_list));
+        controller.setAnchorView(findViewById(R.id.controller_location));
         controller.setEnabled(true);
     }
 
