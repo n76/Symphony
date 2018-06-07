@@ -1,6 +1,7 @@
+<img src="Logotype Primaryyy.png"/>
+
 Symphony - A music player for Android
 =====================================
-<img src="Logotype Primaryyy.png" width="60%" height="60%" />
 Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs (movements) played in the correct order.
 
 Features
@@ -39,7 +40,6 @@ Permissions
 |:----------|:---|
 READ_EXTERNAL_STORAGE|Needed to access music stored on your microSD card.
 WAKE_LOCK|So the player can go to the background without stopping
-MEDIA_CONTENT_CONTROL|So we can actually control and play you music.
 
 Update History
 ==============
