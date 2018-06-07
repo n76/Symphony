@@ -112,12 +112,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private Spinner albumSpinner;
     private ArrayAdapter<Genre> albumAdaptor;
 
-    // Controlling currently playing song/track
-    private MediaController controller;
-
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
-    private long mSeekBarTime = 0;
     private TextView mPlayingAlbum, mPlayingSong, mDuration, mSongPosition;
 
     //runs without a timer by reposting this handler at the end of the runnable
@@ -130,7 +126,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private Intent playIntent;
 
     private boolean paused=false;
-    private boolean playbackPaused=false;
 
     // Receive notifications about what the music service is playing
     private BroadcastReceiver servicePlayingUpdateReceiver = new BroadcastReceiver() {
@@ -197,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         super.onPause();
         Log.d(TAG, "onPause() entry.");
         paused=true;
-        timerHandler.removeCallbacks(timerRunnable);
+        stopSeekTracking();
     }
 
     @Override
@@ -208,6 +203,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             if (paused) {
                 paused = false;
                 updateControls();
+                if (isPlaying())
+                    startSeekTracking();
             }
         }
     }
@@ -215,7 +212,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop() entry.");
-        controller.hide();
         savePreferences();
         super.onStop();
     }
@@ -226,9 +222,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         savePreferences();
         stopService(playIntent);
-        if ((controller != null) && controller.isShowing())
-            controller.hide();
-        controller = null;
         if (musicSrv != null) {
             unbindService(musicConnection);
         }
@@ -362,53 +355,20 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             playingGenreId = displayGenreId;
         }
         musicSrv.playTrack(displayTrackIndex);
-        if(playbackPaused){
-            setController();
-            setPlaybackPaused(false);
-        }
+        startSeekTracking();
         updateControls();
-    }
-
-    //
-    // Music/media controller setup and call back methods
-    //
-    // SetController sets it up and anchors it to a place on
-    // the screen. We set up the play previous and play next
-    // call backs here too.
-    //
-    private void setController(){
-        //set the controller up
-        if (controller == null) {
-            controller = new MusicController(this);
-
-            controller.setPrevNextListeners(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    playNext();
-                }
-            }, new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    playPrev();
-                }
-            });
-
-            controller.setMediaPlayer(this);
-        }
-        controller.setAnchorView(findViewById(R.id.song_list));
-        controller.setEnabled(true);
     }
 
     private void playNext(){
         musicSrv.playNext();
-        setPlaybackPaused(false);
+        startSeekTracking();
         updateControls();
     }
 
     private void playPrev(){
         Log.d(TAG,"playPrev() entry.");
         musicSrv.playPrev();
-        setPlaybackPaused(false);
+        startSeekTracking();
         updateControls();
     }
 
@@ -417,15 +377,15 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     public void start() {
         Log.d(TAG, "start() Entry.");
-        setPlaybackPaused(false);
         musicSrv.go();
+        startSeekTracking();
     }
 
     @Override
     public void pause() {
         Log.d(TAG, "start() Entry.");
-        setPlaybackPaused(true);
         musicSrv.pausePlayer();
+        stopSeekTracking();
     }
 
     @Override
@@ -554,7 +514,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
         songView.setAdapter(songAdt);
-        setController();
 
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
@@ -890,8 +849,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void updateControls(int trackIndex) {
-//        if (controller!= null)
-//            controller.show();
         updatePlayingStatus();
         updateSeekBar();
         updateCurrentTrackInfo(trackIndex);
@@ -917,7 +874,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         int currPos = getCurrentPosition();
         mSongPosition.setText(formatDuration(currPos));
         mSeekBar.setProgress(currPos);
-        mSeekBarTime = System.currentTimeMillis();
     }
 
     private void updateCurrentTrackInfo(int trackIndex) {
@@ -939,22 +895,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
     }
 
-    private void setPlaybackPaused(boolean newValue) {
-        if (newValue != playbackPaused) {
-            playbackPaused = newValue;
-            if (playbackPaused) {
-                timerHandler.removeCallbacks(timerRunnable);
-            } else {
-                timerRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "timerRunnable.run() entry");
-                        updateSeekBar();
-                        timerHandler.postDelayed(this, 1000);
-                    }
-                };
-                timerHandler.post(timerRunnable);
+    private void startSeekTracking() {
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "timerRunnable.run() entry");
+                updateSeekBar();
+                timerHandler.postDelayed(this, 1000);
             }
-        }
+        };
+        timerHandler.post(timerRunnable);
+    }
+
+    private void stopSeekTracking() {
+        timerHandler.removeCallbacks(timerRunnable);
     }
 }
