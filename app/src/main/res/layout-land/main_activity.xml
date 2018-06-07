@@ -3,16 +3,16 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
-
-    tools:context=".MainActivity" >
+    tools:context=".MainActivity"
+    android:background="@color/colorDark">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="58dp"
-        android:background="?attr/colorPrimary"
-        android:minHeight="?attr/actionBarSize"
-        android:titleTextColor="#ffffff">
+        android:layout_height="45dp"
+        android:background="@color/colorDark"
+        android:minHeight="?attr/actionBarSize">
+
         <Spinner
             android:id="@+id/shuffle_select"
             android:layout_width="wrap_content"
@@ -21,34 +21,38 @@
     </android.support.v7.widget.Toolbar>
 
     <LinearLayout
-        android:orientation="horizontal"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
         <RelativeLayout
             android:layout_width="0dip"
             android:layout_height="fill_parent"
             android:layout_weight="0.4">
-                <LinearLayout
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
                 <Spinner
                     android:id="@+id/genre_select"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown" />
+                    android:spinnerMode="dropdown"
+                    android:backgroundTint="@color/colorDark"/>
 
                 <Spinner
                     android:id="@+id/album_select"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown" />
+                    android:spinnerMode="dropdown"
+                    android:backgroundTint="@color/colorDark"/>
 
-                    <!-- PLAYER_CONTROLS -->
-                    <include layout="@layout/player_controls" />
+                <!-- PLAYER_CONTROLS -->
+                <include layout="@layout/player_controls" />
             </LinearLayout>
         </RelativeLayout>
 
@@ -59,8 +63,9 @@
             <ListView
                 android:id="@+id/song_list"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content" >
-            </ListView>
+                android:layout_height="wrap_content"
+                android:background="@color/colorLight"
+                />
         </RelativeLayout>
     </LinearLayout>
 

@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:onClick="songPicked"
     android:orientation="vertical"
-    android:padding="5dp" >
+    android:padding="5dp"
+    >
 
     <TextView
         android:id="@+id/song_title"
@@ -13,7 +14,7 @@
         android:textSize="18sp"
         android:textStyle="bold"
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="?android:attr/textColorPrimary"
+        android:textColor="@color/colorDark"
         />
 
     <TextView
@@ -21,7 +22,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="?android:attr/textColorSecondary"
+        android:textColor="@color/colorDark"
         />
 
 </LinearLayout>

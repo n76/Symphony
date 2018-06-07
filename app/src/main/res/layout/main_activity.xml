@@ -3,15 +3,15 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/colorDark">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="45dp"
-        android:background="?attr/colorPrimary"
-        android:minHeight="?attr/actionBarSize"
-        android:titleTextColor="#ffffff">
+        android:background="@color/colorDark"
+        android:minHeight="?attr/actionBarSize">
 
         <Spinner
             android:id="@+id/shuffle_select"
@@ -25,20 +25,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:drawable/btn_dropdown"
-        android:spinnerMode="dropdown" />
+        android:spinnerMode="dropdown"
+        android:backgroundTint="@color/colorDark"
+        />
 
     <Spinner
         android:id="@+id/album_select"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:drawable/btn_dropdown"
-        android:spinnerMode="dropdown" />
+        android:spinnerMode="dropdown"
+        android:backgroundTint="@color/colorDark"/>
 
     <ListView
         android:id="@+id/song_list"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:background="@color/colorLight"
+        />
 
     <!-- PLAYER_CONTROLS -->
     <include layout="@layout/player_controls" />
