@@ -23,6 +23,7 @@ import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -33,6 +34,9 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.Manifest;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -49,6 +53,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
@@ -114,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
-    private TextView mPlayingAlbum, mPlayingSong, mDuration, mSongPosition;
+    private TextView mPlayingAlbum, mPlayingSong, mPlayingArtist, mDuration, mSongPosition;
+    private ImageView mAlbumArt;
 
     //runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();
@@ -137,7 +143,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             switch (mAction) {
                 case MusicService.SERVICE_NOW_PLAYING:
                 case MusicService.SERVICE_PAUSED:
-                    updateControls();
                     currentlyPlaying = intent.getIntExtra("songIndex",0);
                     if (displayGenreId == playingGenreId) {
                         selectDisplayAlbum(currentlyPlaying);
@@ -507,10 +512,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         mPlayPauseButton = (ImageButton) findViewById(R.id.play_pause);
 
-        mPlayingSong = (TextView) findViewById(R.id.playing_song);
         mPlayingAlbum = (TextView) findViewById(R.id.playing_album);
+        mPlayingSong = (TextView) findViewById(R.id.playing_song);
+        mPlayingArtist = (TextView) findViewById(R.id.playing_artist);
         mDuration = (TextView) findViewById(R.id.duration);
         mSongPosition = (TextView) findViewById(R.id.song_position);
+        mAlbumArt = (ImageView) findViewById(R.id.cover_art);
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
         songView.setAdapter(songAdt);
@@ -589,7 +596,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             genreSpinner.setSelection(genreIndex);
             if (savedTrackIndex >= 0) {
                 selectDisplayAlbum(savedTrackIndex);
-                updateControls(savedTrackIndex);
             }
         }
     }
@@ -775,7 +781,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 songDisplayIndex = currentlyPlaying;
             selectDisplayAlbum(songDisplayIndex);
             songView.setSelection(songDisplayIndex);
-            updateControls(songDisplayIndex);
         }
     }
 
@@ -878,14 +883,39 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void updateCurrentTrackInfo(int trackIndex) {
         Song displaySong = getSongInfo(trackIndex);
+        Bitmap albumArt = null;
 
         if (displaySong != null) {
             mPlayingAlbum.setText(displaySong.getAlbum());
             mPlayingSong.setText(displaySong.getTitle());
+            mPlayingArtist.setText(displaySong.getArtist());
+            Uri trackUri = ContentUris.withAppendedId(
+                    android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    displaySong.getId());
+            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+            mmr.setDataSource(getApplicationContext(), trackUri);
+
+            byte [] data = mmr.getEmbeddedPicture();
+            //coverart is an Imageview object
+
+            // convert the byte array to a bitmap
+            if(data != null)
+            {
+                try {
+                    albumArt = BitmapFactory.decodeByteArray(data, 0, data.length);
+                } catch (Exception e) {
+                    Log.e("MUSIC SERVICE", "Error getting album artwork", e);
+                    albumArt = null;
+                }
+            }
         } else {
             mPlayingAlbum.setText("");
             mPlayingSong.setText("");
+            mPlayingArtist.setText("");
         }
+        if (albumArt == null)
+            albumArt = BitmapFactory.decodeResource(getResources(), R.drawable.violin_icon);
+        mAlbumArt.setImageBitmap(albumArt);
     }
 
     private static String formatDuration(int duration) {
