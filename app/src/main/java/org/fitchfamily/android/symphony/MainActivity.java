@@ -35,6 +35,7 @@ import android.database.Cursor;
 import android.Manifest;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
@@ -47,15 +48,20 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
+import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 
 import org.fitchfamily.android.symphony.MusicService.MusicBinder;
 
@@ -109,6 +115,15 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     // Controlling currently playing song/track
     private MediaController controller;
 
+    private ImageButton mPlayPauseButton;
+    private SeekBar mSeekBar;
+    private long mSeekBarTime = 0;
+    private TextView mPlayingAlbum, mPlayingSong, mDuration, mSongPosition;
+
+    //runs without a timer by reposting this handler at the end of the runnable
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable;
+
     //
     // The service that actually does the playing
     private MusicService musicSrv = null;
@@ -127,12 +142,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             switch (mAction) {
                 case MusicService.SERVICE_NOW_PLAYING:
                 case MusicService.SERVICE_PAUSED:
-                    if (controller != null)
-                        controller.show();
+                    updateControls();
                     currentlyPlaying = intent.getIntExtra("songIndex",0);
                     if (displayGenreId == playingGenreId) {
                         selectDisplayAlbum(currentlyPlaying);
                         songView.setSelection(currentlyPlaying);
+                        updateControls(currentlyPlaying);
                     }
                     break;
 
@@ -182,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         super.onPause();
         Log.d(TAG, "onPause() entry.");
         paused=true;
+        timerHandler.removeCallbacks(timerRunnable);
     }
 
     @Override
@@ -191,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (musicSrv != null && musicSrv.hasTrack()) {
             if (paused) {
                 paused = false;
-                controller.show();
+                updateControls();
             }
         }
     }
@@ -244,12 +260,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 genreSpinner.setSelection(savedGenreIndex);
             if (savedTrackIndex >= 0) {
                 selectDisplayAlbum(savedTrackIndex);
+                updateControls(savedTrackIndex);
                 if (songView != null)
                     songView.setSelection(savedTrackIndex);
             }
         }
         if ((musicSrv != null) && musicSrv.hasTrack())
-            controller.show();
+            updateControls();
     }
 
     //
@@ -347,9 +364,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         musicSrv.playTrack(displayTrackIndex);
         if(playbackPaused){
             setController();
-            playbackPaused=false;
+            setPlaybackPaused(false);
         }
-        controller.show(0);
+        updateControls();
     }
 
     //
@@ -378,24 +395,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
             controller.setMediaPlayer(this);
         }
-        controller.setAnchorView(findViewById(R.id.controller_location));
+        controller.setAnchorView(findViewById(R.id.song_list));
         controller.setEnabled(true);
     }
 
     private void playNext(){
         musicSrv.playNext();
-        if(playbackPaused){
-            playbackPaused=false;
-        }
-        controller.show();
+        setPlaybackPaused(false);
+        updateControls();
     }
 
     private void playPrev(){
+        Log.d(TAG,"playPrev() entry.");
         musicSrv.playPrev();
-        if(playbackPaused){
-            playbackPaused=false;
-        }
-        controller.show();
+        setPlaybackPaused(false);
+        updateControls();
     }
 
     // Media Controller methods
@@ -403,14 +417,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     public void start() {
         Log.d(TAG, "start() Entry.");
-        playbackPaused = false;
+        setPlaybackPaused(false);
         musicSrv.go();
     }
 
     @Override
     public void pause() {
         Log.d(TAG, "start() Entry.");
-        playbackPaused=true;
+        setPlaybackPaused(true);
         musicSrv.pausePlayer();
     }
 
@@ -470,6 +484,35 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return 0;
     }
 
+
+    public void stopOrPause(View v) {
+        if (isPlaying())
+            pause();
+        else
+            start();
+    }
+
+    public void seekBack(View v) {
+        seekTo(Math.max(0,getCurrentPosition() - 5000));
+        updateControls();
+    }
+
+    public void seekForward(View v) {
+        seekTo(Math.min(getCurrentPosition() + 5000, getDuration()));
+        updateControls();
+    }
+
+    public void skipBack(View v) {
+        Log.d(TAG,"skipBack() entry.");
+        playPrev();
+    }
+
+    public void skipForward(View v) {
+        Log.d(TAG,"skipForward() entry.");
+        playNext();
+    }
+
+
     //
     // Sorting by name should ignore 'The ' and 'A ' prefixes.
     //
@@ -499,6 +542,15 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         genreSpinner = (Spinner)findViewById(R.id.genre_select);
         albumSpinner = (Spinner)findViewById(R.id.album_select);
         songView = (ListView)findViewById(R.id.song_list);
+
+        mSeekBar = (SeekBar) findViewById(R.id.seekTo);
+
+        mPlayPauseButton = (ImageButton) findViewById(R.id.play_pause);
+
+        mPlayingSong = (TextView) findViewById(R.id.playing_song);
+        mPlayingAlbum = (TextView) findViewById(R.id.playing_album);
+        mDuration = (TextView) findViewById(R.id.duration);
+        mSongPosition = (TextView) findViewById(R.id.song_position);
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
         songView.setAdapter(songAdt);
@@ -578,6 +630,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             genreSpinner.setSelection(genreIndex);
             if (savedTrackIndex >= 0) {
                 selectDisplayAlbum(savedTrackIndex);
+                updateControls(savedTrackIndex);
             }
         }
     }
@@ -763,16 +816,25 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 songDisplayIndex = currentlyPlaying;
             selectDisplayAlbum(songDisplayIndex);
             songView.setSelection(songDisplayIndex);
+            updateControls(songDisplayIndex);
         }
     }
 
-    private void selectDisplayAlbum(int songIndex) {
-        Log.d(TAG, "selectDisplayAlbum("+songIndex+") Entry.");
+    private Song getSongInfo(int songIndex) {
+        Log.d(TAG, "getSongInfo(" + songIndex + ") Entry.");
         if ((currentDisplayPlayList != null) && !currentDisplayPlayList.isEmpty()) {
             if (songIndex >= currentDisplayPlayList.size())
                 songIndex = 0;
             displayTrackIndex = songIndex;
-            Song displaySong = currentDisplayPlayList.get(songIndex);
+            return currentDisplayPlayList.get(songIndex);
+        }
+        return null;
+    }
+
+    private void selectDisplayAlbum(int songIndex) {
+        Log.d(TAG, "selectDisplayAlbum("+songIndex+") Entry.");
+        Song displaySong = getSongInfo(songIndex);
+        if (displaySong != null) {
             String albumTitle = displaySong.getAlbum();
 
             for (int i = 0; i < currentDisplayAlbums.size(); i++) {
@@ -825,5 +887,74 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         currentShuffleValue = prefs.getInt(SAVED_SHUFFLE_MODE, MusicService.PLAY_SEQUENTIAL);
         savedTrackIndex = prefs.getInt(SAVED_TRACK_INDEX, -1);
         savedTrackPosition = prefs.getInt(SAVED_TRACK_POSITION, -1);
+    }
+
+    private void updateControls(int trackIndex) {
+//        if (controller!= null)
+//            controller.show();
+        updatePlayingStatus();
+        updateSeekBar();
+        updateCurrentTrackInfo(trackIndex);
+    }
+
+    private void updateControls() {
+        updateControls(currentlyPlaying);
+    }
+
+    private void updatePlayingStatus() {
+        int drawable = R.drawable.ic_playback_start;
+        if (isPlaying())
+            drawable = R.drawable.ic_playback_pause;
+        mPlayPauseButton.setImageResource(drawable);
+    }
+
+    private synchronized void updateSeekBar() {
+        Log.d(TAG, "updateSeekBar() Entry.");
+        int duration = getDuration();
+        mSeekBar.setMax(duration);
+        mDuration.setText(formatDuration(duration));
+
+        int currPos = getCurrentPosition();
+        mSongPosition.setText(formatDuration(currPos));
+        mSeekBar.setProgress(currPos);
+        mSeekBarTime = System.currentTimeMillis();
+    }
+
+    private void updateCurrentTrackInfo(int trackIndex) {
+        Song displaySong = getSongInfo(trackIndex);
+
+        if (displaySong != null) {
+            mPlayingAlbum.setText(displaySong.getAlbum());
+            mPlayingSong.setText(displaySong.getTitle());
+        } else {
+            mPlayingAlbum.setText("");
+            mPlayingSong.setText("");
+        }
+    }
+
+    private static String formatDuration(int duration) {
+        return String.format(Locale.getDefault(), "%02d:%02d",
+                TimeUnit.MILLISECONDS.toMinutes(duration),
+                TimeUnit.MILLISECONDS.toSeconds(duration) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+    }
+
+    private void setPlaybackPaused(boolean newValue) {
+        if (newValue != playbackPaused) {
+            playbackPaused = newValue;
+            if (playbackPaused) {
+                timerHandler.removeCallbacks(timerRunnable);
+            } else {
+                timerRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "timerRunnable.run() entry");
+                        updateSeekBar();
+                        timerHandler.postDelayed(this, 1000);
+                    }
+                };
+                timerHandler.post(timerRunnable);
+            }
+        }
     }
 }

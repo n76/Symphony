@@ -31,7 +31,7 @@ This program is Free Software: you can redistribute it and/or modify it under th
 
 Other
 =====
-The icon for this app was derived from a [public domain image](https://commons.wikimedia.org/wiki/File:Bratsche.jpg).
+The media control icons for this app are from the [GNOME Desktop icons](https://commons.wikimedia.org/wiki/GNOME_Desktop_icons) set.
 
 Permissions
 ===========

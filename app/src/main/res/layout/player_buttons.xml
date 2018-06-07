@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/skip_back"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/app_name"
+        android:onClick="skipBack"
+        android:padding="12dp"
+        android:src="@drawable/ic_skip_backward" />
+
+    <ImageButton
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/app_name"
+        android:onClick="seekBack"
+        android:padding="12dp"
+        android:src="@drawable/ic_seek_backward" />
+
+    <ImageButton
+        android:id="@+id/play_pause"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/app_name"
+        android:onClick="stopOrPause"
+        android:padding="12dp"
+        android:src="@drawable/ic_playback_start" />
+
+    <ImageButton
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/app_name"
+        android:onClick="seekForward"
+        android:padding="12dp"
+        android:src="@drawable/ic_seek_forward" />
+
+    <ImageButton
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/app_name"
+        android:onClick="skipForward"
+        android:padding="12dp"
+        android:src="@drawable/ic_skip_forward" />
+</LinearLayout>

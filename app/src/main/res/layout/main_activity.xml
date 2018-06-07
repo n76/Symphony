@@ -40,11 +40,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"/>
 
-    <!-- An item to anchor our media controller to below
-         the list of songs. -->
-    <TextView
-        android:id="@+id/controller_location"
-        android:layout_width="fill_parent"
-        android:layout_height="100dp" />
+    <!-- PLAYER_CONTROLS -->
+    <include layout="@layout/player_controls" />
 
 </LinearLayout>

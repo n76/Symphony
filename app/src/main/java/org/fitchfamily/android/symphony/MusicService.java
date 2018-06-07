@@ -669,7 +669,7 @@ public class MusicService extends Service implements
         Notification.Builder builder = new Notification.Builder(this);
 
         builder.setContentIntent(pendInt)
-                .setSmallIcon(R.drawable.play)
+                .setSmallIcon(R.drawable.ic_notification_icon)
                 .setOngoing(true);
 
         if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {

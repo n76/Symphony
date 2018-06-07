@@ -47,10 +47,8 @@
                     android:background="@android:drawable/btn_dropdown"
                     android:spinnerMode="dropdown" />
 
-                <TextView
-                    android:id="@+id/controller_location"
-                    android:layout_width="fill_parent"
-                    android:layout_height="100dp" />
+                    <!-- PLAYER_CONTROLS -->
+                    <include layout="@layout/player_controls" />
             </LinearLayout>
         </RelativeLayout>
 
