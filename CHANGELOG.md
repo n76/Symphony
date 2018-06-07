@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Customize playback controls
+- Revise color scheme
 
 ### Removed
 - Not applicable
