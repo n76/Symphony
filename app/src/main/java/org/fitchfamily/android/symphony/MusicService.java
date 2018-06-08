@@ -167,6 +167,7 @@ public class MusicService extends Service implements
 
     private ArrayList<Song> songs;      // Tracks to play
     private ArrayList<Album> albums;    // Albums found in songs
+    private String playListGenre;       // The Genre we are playing
 
     private MediaPlayer currentTrackPlayer;     // The media player playing the current track
     private MediaPlayer onDeckTrackPlayer;      // The media player set up for the next track
@@ -350,7 +351,7 @@ public class MusicService extends Service implements
         super.onDestroy();
     }
 
-    public void setList(ArrayList<Song> theSongs){
+    public void setList(ArrayList<Song> theSongs, String theGenre){
         Log.d(TAG,"setList() entry.");
         resetToInitialState();
         songs=theSongs;
@@ -359,7 +360,8 @@ public class MusicService extends Service implements
         albumOrder = genPlayOrder(albums.size());
         resetHistory();
         playingIndexInfo = null;
-        onDeckIndexInfo = new IndexInfo();;
+        onDeckIndexInfo = new IndexInfo();
+        playListGenre = theGenre;
     }
 
     public synchronized void setShuffle(int playMode){
@@ -411,6 +413,13 @@ public class MusicService extends Service implements
 
     public int getShuffle() {
         return shuffle;
+    }
+
+    public synchronized int getTrackIndex() {
+        if (playingIndexInfo != null)
+            return playingIndexInfo.getTrackIndex();
+        else
+            return -1;
     }
 
     public class MusicBinder extends Binder {
@@ -541,6 +550,17 @@ public class MusicService extends Service implements
             return currentTrackPlayer.getDuration();
         Log.d(TAG,"getDuration() not playing?");
         return 0;
+    }
+
+    public synchronized String getGenre() {
+        return playListGenre;
+    }
+
+    public synchronized Song getCurrentSong() {
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            return songs.get(playingIndexInfo.getTrackIndex());    //get song info
+        }
+        return null;
     }
 
     public synchronized boolean isPlaying(){
