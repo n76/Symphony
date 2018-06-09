@@ -1,0 +1,6 @@
+v1.1.5 relased on 2018-06-08
+
+Changes
+- Customize playback controls
+- Revise color scheme
+- Revise display logic
