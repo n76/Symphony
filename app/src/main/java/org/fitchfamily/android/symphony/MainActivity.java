@@ -148,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
+    private boolean mUserIsSeeking = false;
     private TextView mPlayingAlbum, mPlayingSong, mPlayingArtist, mDuration, mSongPosition;
     private ImageView mAlbumArt;
 
@@ -539,6 +540,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         songView = (ListView)findViewById(R.id.song_list);
 
         mSeekBar = (SeekBar) findViewById(R.id.seekTo);
+        initializeSeekBar();
 
         mPlayPauseButton = (ImageButton) findViewById(R.id.play_pause);
 
@@ -669,6 +671,32 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 // TODO Auto-generated method stub
             }
         });
+    }
+
+    private void initializeSeekBar() {
+        mSeekBar.setOnSeekBarChangeListener(
+            new SeekBar.OnSeekBarChangeListener() {
+                int userSelectedPosition = 0;
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                    mUserIsSeeking = true;
+                }
+
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        userSelectedPosition = progress;
+                    }
+                    mSongPosition.setText(formatDuration(progress));
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    mUserIsSeeking = false;
+                    musicSrv.seek(userSelectedPosition);
+                }
+            });
     }
 
 
@@ -937,13 +965,15 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private synchronized void updateSeekBar() {
         //Log.d(TAG, "updateSeekBar() Entry.");
-        int duration = getDuration();
-        mSeekBar.setMax(duration);
-        mDuration.setText(formatDuration(duration));
+        if (!mUserIsSeeking) {
+            int duration = getDuration();
+            mSeekBar.setMax(duration);
+            mDuration.setText(formatDuration(duration));
 
-        int currPos = getCurrentPosition();
-        mSongPosition.setText(formatDuration(currPos));
-        mSeekBar.setProgress(currPos);
+            int currPos = getCurrentPosition();
+            mSongPosition.setText(formatDuration(currPos));
+            mSeekBar.setProgress(currPos);
+        }
     }
 
     private void updateCurrentTrackInfo() {
