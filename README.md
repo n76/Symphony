@@ -1,4 +1,4 @@
-<img src="Logotype Primaryyy.png"/>
+<img src="fastlane/metadata/android/en/images/featureGraphic.png"/>
 
 Symphony - A music player for Android
 =====================================
