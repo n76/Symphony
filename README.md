@@ -2,17 +2,22 @@
 
 Symphony - A music player for Android
 =====================================
-Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs (movements) played in the correct order.
+Yet another music player for Android. What makes this one different is that it supports shuffle play of albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs/tracks (movements) played in the correct order.
 
 Features
 ========
 - “Gap-less” playback.
 - Very simple interface.
-- Within a genre, songs may be played in sequence, randomly or by random album.
+- Within a genre, tracks may be played in sequence, randomly or by random album.
+
+Screenshots
+===========
+<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot1.png"/>
+<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot2.png"/>
 
 Why the name “Symphony”?
 ========================
-Partly because [AndreasK](https://f-droid.org/packages/de.kromke.andreas.unpopmusicplayerfree/) used the much better name “Unpopular Music Player”. And partly because it is tailored toward listening to symphonic music.
+Partly because [AndreasK](https://gitlab.com/AndreasK/unpopular-music-player) used the much better name [“Unpopular Music Player”](https://f-droid.org/packages/de.kromke.andreas.unpopmusicplayerfree/). And partly because it is tailored toward listening to classical music where a single composition usually consists of several movements.
 
 Operation
 =========
