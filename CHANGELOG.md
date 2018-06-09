@@ -9,12 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Customize playback controls
-- Revise color scheme
-- Revise display logic
+- Not applicable
 
 ### Removed
 - Not applicable
+
+## [1.1.5] 2018-06-08
+### Changed
+- Customize playback controls
+- Revise color scheme
+- Revise display logic
 
 ## [1.1.4] 2018-06-03
 ### Added
