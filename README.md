@@ -12,8 +12,8 @@ Features
 
 Screenshots
 ===========
-<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot1.png"/>
-<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot2.png"/>
+<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot1.png" width="200"/>
+<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot2.png" width="200"/>
 
 Why the name “Symphony”?
 ========================
