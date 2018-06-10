@@ -1,7 +1,7 @@
 /*
  *    Symphony
  *
- *    Copyright (C) 2017 Tod Fitch
+ *    Copyright (C) 2017, 2018 Tod Fitch
  *
  *    This program is Free Software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as
@@ -19,6 +19,8 @@
 
 package org.fitchfamily.android.symphony;
 
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 import java.util.ArrayList;
 
@@ -30,15 +32,18 @@ public class Album {
     private String title;
     private long id;
     private int trackIndex;
+    private long mImageId;
 
     private static final String TAG = "Symphony:Album";
 
     public Album(long albumId,
                  String albumTitle,
+                 long imageID,
                  int songTrack) {
  //       Log.d(TAG,"Album() entry.");
         id=albumId;
         title=albumTitle;
+        this.mImageId = imageID;
         trackIndex=songTrack;
     }
 
@@ -46,18 +51,23 @@ public class Album {
     public String getTitle(){return title;}
     public int getTrack(){return trackIndex;}       // Index to first song/track in album
 
-    public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs) {
+    public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs, Context context) {
         Log.d(TAG,"getAlbumIndexes() entry.");
         ArrayList<Album> rslt = new ArrayList<Album>();
 
         long   aId = 0;
         for (int i=0; i<songs.size(); i++) {
             if ((i == 0) || (songs.get(i).getAlbumId() != aId)) {
-                aId = songs.get(i).getAlbumId();
-                rslt.add(new Album(songs.get(i).getAlbumId(),songs.get(i).getAlbum(),i));
+                Song s = songs.get(i);
+                aId = s.getAlbumId();
+                rslt.add(new Album(aId,s.getAlbum(),s.getId(),i));
             }
         }
         return rslt;
+    }
+
+    public long getImageId() {
+        return mImageId;
     }
 
     public String toString() {

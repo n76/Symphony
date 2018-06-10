@@ -1,7 +1,7 @@
 /*
  *    Symphony
  *
- *    Copyright (C) 2017 Tod Fitch
+ *    Copyright (C) 2017, 2018 Tod Fitch
  *
  *    This program is Free Software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as
@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ArrayList<Album> currentDisplayAlbums;      // Albums in currently displayed genre.
     private ArrayList<Song> currentDisplayPlayList;     // Tracks/songs in genre currently being played
 
+    private ImageLoader mImageLoader;                   // LRU cache/background image loader
+
     //
     // Information to save display or playing state information
     //
@@ -141,13 +143,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     // Viewing Albums
     private Spinner albumSpinner;
-    private ArrayAdapter<Genre> albumAdaptor;
+    private AlbumSpinnerAdaptor albumAdaptor;
 
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
     private boolean mUserIsSeeking = false;
     private TextView mPlayingAlbum, mPlayingSong, mPlayingArtist, mDuration, mSongPosition;
     private ImageView mPlayingArtwork;
+    private long mPlayingSongId;
 
     //runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();
@@ -194,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() entry.");
 
+        mImageLoader = new ImageLoader(this);
         servicePlayUpdateBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MusicService.SERVICE_NOW_PLAYING);
@@ -547,6 +551,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         mDuration = (TextView) findViewById(R.id.duration);
         mSongPosition = (TextView) findViewById(R.id.song_position);
         mPlayingArtwork = (ImageView) findViewById(R.id.cover_art);
+        mPlayingSongId = -1;
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
         songView.setAdapter(songAdt);
@@ -582,7 +587,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         });
 
-        albumAdaptor = new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, currentDisplayAlbums);
+        albumAdaptor = new AlbumSpinnerAdaptor(this, currentDisplayAlbums, mImageLoader);
         albumSpinner.setAdapter(albumAdaptor);
         albumSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 
@@ -810,7 +815,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             currentDisplayPlayList.clear();
             currentDisplayPlayList.addAll(genrePlaylist);
 
-            ArrayList<Album> genreAlbums = Album.getAlbumIndexes(genrePlaylist);
+            ArrayList<Album> genreAlbums = Album.getAlbumIndexes(genrePlaylist, this);
 
             currentDisplayAlbums.clear();
             if (genreAlbums != null)
@@ -975,22 +980,25 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void updateCurrentTrackInfo() {
 
-        Bitmap artwork = null;
         Song currentTrack = null;
         if (musicSrv != null) {
             currentTrack = musicSrv.getCurrentSong();
         }
 
         if (currentTrack != null) {
-            mPlayingAlbum.setText(currentTrack.getAlbum());
-            mPlayingSong.setText(currentTrack.getTitle());
-            mPlayingArtist.setText(currentTrack.getArtist());
-            mPlayingArtwork.setImageBitmap(currentTrack.getArtwork(getApplicationContext()));
+            if (currentTrack.getId() != mPlayingSongId) {
+                mPlayingSongId = currentTrack.getId();
+                mPlayingAlbum.setText(currentTrack.getAlbum());
+                mPlayingSong.setText(currentTrack.getTitle());
+                mPlayingArtist.setText(currentTrack.getArtist());
+                mImageLoader.display(mPlayingSongId, mPlayingArtwork);
+            }
         } else {
             mPlayingAlbum.setText("");
             mPlayingSong.setText("");
             mPlayingArtist.setText("");
             mPlayingArtwork.setImageResource(R.drawable.ic_launcher_icon);
+            mPlayingSongId = -1;
         }
     }
 

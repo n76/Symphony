@@ -1,7 +1,7 @@
 /*
  *    Symphony
  *
- *    Copyright (C) 2017 Tod Fitch
+ *    Copyright (C) 2017, 2018 Tod Fitch
  *
  *    This program is Free Software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as
