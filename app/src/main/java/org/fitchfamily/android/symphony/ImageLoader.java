@@ -17,6 +17,10 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * Largely inspired by https://stackoverflow.com/questions/11623994/example-using-androids-lrucache
+ */
+
 package org.fitchfamily.android.symphony;
 
 import android.app.ActivityManager;
@@ -25,6 +29,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -34,8 +39,15 @@ import android.widget.ImageView;
 import android.content.res.Configuration;
 
 public class ImageLoader implements ComponentCallbacks2 {
+    private static final String TAG = "Symphony:ImageLoader";
+
+    private static final long MAX_TASKS = 20;
+
     private ImageLruCache cache;
+    private LruCache<Long,Boolean> badArtwork;
     private Context mContext;
+    private Drawable mAppIcon;
+    private int mAsyncTaskCount;
 
     private class ImageLruCache extends LruCache<Long, Bitmap> {
 
@@ -54,25 +66,46 @@ public class ImageLoader implements ComponentCallbacks2 {
         ActivityManager am = (ActivityManager) context.getSystemService(
                 Context.ACTIVITY_SERVICE);
         mContext = context;
+        mAppIcon = mContext.getDrawable(R.drawable.ic_launcher_icon);
         int maxKb = am.getMemoryClass() * 1024;
         int limitKb = maxKb / 8; // 1/8th of total ram
         cache = new ImageLruCache(limitKb);
+        badArtwork = new LruCache<>(1000);
+        mAsyncTaskCount = 0;
     }
 
     public void display(long id, ImageView imageview) {
-        imageview.setImageResource(R.drawable.ic_launcher_icon);
+        imageview.setImageDrawable(mAppIcon);
+
         Bitmap image = cache.get(id);
         if (image != null) {
-            imageview.setImageBitmap(image.copy(image.getConfig(),true));
+            imageview.setImageBitmap(image);
         }
-        else {
+        else if (badArtwork.get(id) == null) {
+            startBackgroundImageExtraction(imageview, id);
+        } else
+            Log.d(TAG, "display(" + id + ") marked as bad.");
+    }
+
+    private synchronized void startBackgroundImageExtraction(ImageView imageview, long id) {
+        if (mAsyncTaskCount <= MAX_TASKS) {
+            mAsyncTaskCount++;
             new SetImageTask(imageview).execute(id);
+        } else {
+            Log.d(TAG, "startBackgroundImageExtraction(): Too many tasks.");
         }
+    }
+
+    private synchronized void backgroundImageExtractionFinished() {
+        mAsyncTaskCount--;
+        if (mAsyncTaskCount < 0)
+            mAsyncTaskCount = 0;
+        Log.d(TAG, "backgroundImageExtractionFinished(): Task count=" + mAsyncTaskCount);
     }
 
     private class SetImageTask extends AsyncTask<Long, Void, Integer> {
         private ImageView mImageView;
-        private Bitmap bmp;
+        private Bitmap bmp = null;
 
         public SetImageTask(ImageView imageview) {
             this.mImageView = imageview;
@@ -82,15 +115,19 @@ public class ImageLoader implements ComponentCallbacks2 {
         protected Integer doInBackground(Long... params) {
             long id = params[0];
             try {
-                bmp = getBitmapTrack(id);
+                bmp = getTrackArtwork(id);
                 if (bmp != null) {
                     cache.put(id, bmp);
                 }
                 else {
+                    Log.d(TAG, "doInBackground("+id+") - Unable to get artwork.");
+                    badArtwork.put(id,true);
                     return 0;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                badArtwork.put(id,true);
+                Log.d(TAG, "doInBackground("+id+") - Unable to get artwork.");
                 return 0;
             }
             return 1;
@@ -98,28 +135,31 @@ public class ImageLoader implements ComponentCallbacks2 {
 
         @Override
         protected void onPostExecute(Integer result) {
-            if (result == 1) {
+            if ((result == 1) && (bmp != null)) {
                 mImageView.setImageBitmap(bmp);
             }
+            backgroundImageExtractionFinished();
             super.onPostExecute(result);
         }
 
-        private Bitmap getBitmapTrack(long id) {
+        private Bitmap getTrackArtwork(long id) {
             Bitmap artwork = null;
             try {
                 Uri trackUri = ContentUris.withAppendedId(
                         android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                mmr.setDataSource(mContext, trackUri);
+                if (trackUri != null) {
+                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                    mmr.setDataSource(mContext, trackUri);
 
-                byte[] data = mmr.getEmbeddedPicture();
-                //coverart is an Imageview object
+                    byte[] data = mmr.getEmbeddedPicture();
+                    //coverart is an Imageview object
 
-                // convert the byte array to a bitmap
-                if (data != null)
-                    artwork = BitmapFactory.decodeByteArray(data, 0, data.length);
+                    // convert the byte array to a bitmap
+                    if (data != null)
+                        artwork = BitmapFactory.decodeByteArray(data, 0, data.length);
+                }
             } catch (Exception e) {
-                Log.e("MUSIC SERVICE", "Error getting album artwork", e);
+                Log.e(TAG, "Error getting album artwork", e);
                 artwork = null;
             }
             return artwork;
