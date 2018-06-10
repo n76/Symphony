@@ -902,14 +902,6 @@ public class MusicService extends Service implements
             String trackAlbum = songToPlay.getAlbum();
             String trackArtist = songToPlay.getArtist();
             Bitmap trackArtwork = songToPlay.getArtwork(getApplicationContext());
-            if (trackArtwork == null) {
-                Drawable drawable = getApplicationContext().getDrawable(R.drawable.ic_launcher_icon);
-                trackArtwork = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
-                        drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(trackArtwork);
-                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                drawable.draw(canvas);
-            }
 
             // If we are in random album mode, then swap artist and album so that the Grom
             // USB-3 adaptor will display the album (symphony, Broadway show, etc.) title

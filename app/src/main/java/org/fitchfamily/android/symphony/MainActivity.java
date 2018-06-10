@@ -985,16 +985,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             mPlayingAlbum.setText(currentTrack.getAlbum());
             mPlayingSong.setText(currentTrack.getTitle());
             mPlayingArtist.setText(currentTrack.getArtist());
-            artwork = currentTrack.getArtwork(getApplicationContext());
+            mPlayingArtwork.setImageBitmap(currentTrack.getArtwork(getApplicationContext()));
         } else {
             mPlayingAlbum.setText("");
             mPlayingSong.setText("");
             mPlayingArtist.setText("");
-        }
-        if (artwork != null)
-            mPlayingArtwork.setImageBitmap(artwork);
-        else
             mPlayingArtwork.setImageResource(R.drawable.ic_launcher_icon);
+        }
     }
 
     private static String formatDuration(int duration) {

@@ -23,6 +23,8 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.util.Log;
@@ -75,7 +77,6 @@ public class Song {
 
     public Bitmap getArtwork(Context mContext) {
         Bitmap artwork = null;
-
         try {
             Uri trackUri = ContentUris.withAppendedId(
                     android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
@@ -86,10 +87,19 @@ public class Song {
             //coverart is an Imageview object
 
             // convert the byte array to a bitmap
-            artwork = BitmapFactory.decodeByteArray(data, 0, data.length);
+            if (data != null)
+                artwork = BitmapFactory.decodeByteArray(data, 0, data.length);
         } catch (Exception e) {
             Log.e("MUSIC SERVICE", "Error getting album artwork", e);
             artwork = null;
+        }
+        if (artwork == null) {
+                Drawable drawable = mContext.getDrawable(R.drawable.ic_launcher_icon);
+                artwork = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                        drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(artwork);
+                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                drawable.draw(canvas);
         }
         return artwork;
     }
