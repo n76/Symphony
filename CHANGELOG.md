@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Not applicable
+- Clean up logic for getting track artwork. If track has no artwork use application's icon.
 
 ### Removed
 - Not applicable

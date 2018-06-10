@@ -9,7 +9,7 @@
         android:layout_width="55dp"
         android:layout_height="55dp"
         android:padding="2dp"
-        android:src="@drawable/violin_icon"/>
+        android:src="@drawable/ic_launcher_icon"/>
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/player_info"

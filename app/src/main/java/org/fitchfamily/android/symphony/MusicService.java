@@ -28,10 +28,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.graphics.Canvas;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
-import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
@@ -901,6 +901,15 @@ public class MusicService extends Service implements
             String trackTitle = songToPlay.getTitle();            //set title
             String trackAlbum = songToPlay.getAlbum();
             String trackArtist = songToPlay.getArtist();
+            Bitmap trackArtwork = songToPlay.getArtwork(getApplicationContext());
+            if (trackArtwork == null) {
+                Drawable drawable = getApplicationContext().getDrawable(R.drawable.ic_launcher_icon);
+                trackArtwork = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                        drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(trackArtwork);
+                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                drawable.draw(canvas);
+            }
 
             // If we are in random album mode, then swap artist and album so that the Grom
             // USB-3 adaptor will display the album (symphony, Broadway show, etc.) title
@@ -913,37 +922,9 @@ public class MusicService extends Service implements
                 trackArtist = t;
             }
 
-            // If track includes embedded artwork, use that if not default to
-            // Our built in violin image
-            Bitmap albumArt = null;
-            Uri trackUri = ContentUris.withAppendedId(
-                    android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    songToPlay.getId());
-            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-            mmr.setDataSource(getApplicationContext(), trackUri);
-
-            byte [] data = mmr.getEmbeddedPicture();
-            //coverart is an Imageview object
-
-            // convert the byte array to a bitmap
-            if(data != null)
-            {
-                try {
-                    albumArt = BitmapFactory.decodeByteArray(data, 0, data.length);
-                } catch (Exception e) {
-                    Log.e("MUSIC SERVICE", "Error getting album artwork", e);
-                    albumArt = null;
-                }
-            }
-            if (albumArt == null)
-            {
-                albumArt = BitmapFactory.decodeResource(getResources(),
-                        R.drawable.violin_icon); //replace with medias albumArt
-            }
-
             // Update the current metadata
             mediaSession.setMetadata(new MediaMetadata.Builder()
-                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, albumArt)
+                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, trackArtwork)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, trackArtist)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, trackAlbum)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, trackTitle)

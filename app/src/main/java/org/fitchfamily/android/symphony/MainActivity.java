@@ -23,7 +23,6 @@ import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -35,8 +34,6 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.Manifest;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -150,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private SeekBar mSeekBar;
     private boolean mUserIsSeeking = false;
     private TextView mPlayingAlbum, mPlayingSong, mPlayingArtist, mDuration, mSongPosition;
-    private ImageView mAlbumArt;
+    private ImageView mPlayingArtwork;
 
     //runs without a timer by reposting this handler at the end of the runnable
     Handler timerHandler = new Handler();
@@ -549,7 +546,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         mPlayingArtist = (TextView) findViewById(R.id.playing_artist);
         mDuration = (TextView) findViewById(R.id.duration);
         mSongPosition = (TextView) findViewById(R.id.song_position);
-        mAlbumArt = (ImageView) findViewById(R.id.cover_art);
+        mPlayingArtwork = (ImageView) findViewById(R.id.cover_art);
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
         songView.setAdapter(songAdt);
@@ -978,7 +975,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void updateCurrentTrackInfo() {
 
-        Bitmap albumArt = null;
+        Bitmap artwork = null;
         Song currentTrack = null;
         if (musicSrv != null) {
             currentTrack = musicSrv.getCurrentSong();
@@ -988,33 +985,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             mPlayingAlbum.setText(currentTrack.getAlbum());
             mPlayingSong.setText(currentTrack.getTitle());
             mPlayingArtist.setText(currentTrack.getArtist());
-            Uri trackUri = ContentUris.withAppendedId(
-                    android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    currentTrack.getId());
-            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-            mmr.setDataSource(getApplicationContext(), trackUri);
-
-            byte [] data = mmr.getEmbeddedPicture();
-            //coverart is an Imageview object
-
-            // convert the byte array to a bitmap
-            if(data != null)
-            {
-                try {
-                    albumArt = BitmapFactory.decodeByteArray(data, 0, data.length);
-                } catch (Exception e) {
-                    Log.e("MUSIC SERVICE", "Error getting album artwork", e);
-                    albumArt = null;
-                }
-            }
+            artwork = currentTrack.getArtwork(getApplicationContext());
         } else {
             mPlayingAlbum.setText("");
             mPlayingSong.setText("");
             mPlayingArtist.setText("");
         }
-        if (albumArt == null)
-            albumArt = BitmapFactory.decodeResource(getResources(), R.drawable.violin_icon);
-        mAlbumArt.setImageBitmap(albumArt);
+        if (artwork != null)
+            mPlayingArtwork.setImageBitmap(artwork);
+        else
+            mPlayingArtwork.setImageResource(R.drawable.ic_launcher_icon);
     }
 
     private static String formatDuration(int duration) {
