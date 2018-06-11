@@ -17,19 +17,21 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ *  Inspired, in part, by https://www.codingdemos.com/android-custom-spinner-images-text/
+ */
 package org.fitchfamily.android.symphony;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 

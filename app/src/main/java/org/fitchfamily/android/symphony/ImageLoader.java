@@ -49,6 +49,7 @@ import android.app.ActivityManager;
 import android.content.ComponentCallbacks2;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -58,9 +59,9 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
-import android.content.res.Configuration;
-import java.util.Queue;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 public class ImageLoader implements ComponentCallbacks2 {
     private static final String TAG = "Symphony:ImageLoader";

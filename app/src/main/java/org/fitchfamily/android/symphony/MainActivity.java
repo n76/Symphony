@@ -33,7 +33,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.Manifest;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -56,7 +55,6 @@ import android.widget.MediaController.MediaPlayerControl;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-
 
 import java.util.ArrayList;
 import java.util.Collections;

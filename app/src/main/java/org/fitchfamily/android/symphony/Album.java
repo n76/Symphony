@@ -22,6 +22,7 @@ package org.fitchfamily.android.symphony;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
+
 import java.util.ArrayList;
 
 /**
