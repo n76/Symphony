@@ -18,7 +18,29 @@
  */
 
 /*
- * Largely inspired by https://stackoverflow.com/questions/11623994/example-using-androids-lrucache
+ * Inspired by https://stackoverflow.com/questions/11623994/example-using-androids-lrucache
+ *
+ * Theory of operation:
+ * 1. A large music library may have thousands of "albums".
+ * 2. The album artwork is not tracked by the Android media manager, so if we want to display
+ *    it we need to open and parse each file.
+ * 3. Between the potentially large number of albums and the time it takes to extract them,
+ *    we should not perform that operation in the UI thread while building the spinner.
+ *
+ * Our approach is layered:
+ * 1. We maintain "least recently used" (LRU) structures to track the most recent images we've
+ *    extracted. And another to track a list of images that we were unable to extract.
+ * 2. When we are asked to provide an image for a imageView we check to see if we have it (immediate
+ *    completion) or if we've been unable to extract it in the past (also an immediate completion).
+ * 3. If we don't have it and we haven't noted it as a problem image/file, then we will try to
+ *    start a asynchronous task to extract the image. When the async task finishes we place the
+ *    image in the originally provided imageView.
+ * 4. However there can be problems if we start too many async tasks. Specifically a genre with a
+ *    large number of albums/performances can use up all of our available open files leading to a
+ *    crash.
+ * 5. So we limit the number of async tasks running at any given time. But we don't want to discard
+ *    a request to place an image in a imageView. So if we are unable to start a task we will queue
+ *    the request in a deferred queue to be processed when the current async task(s) complete.
  */
 
 package org.fitchfamily.android.symphony;
@@ -37,17 +59,39 @@ import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
 import android.content.res.Configuration;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ImageLoader implements ComponentCallbacks2 {
     private static final String TAG = "Symphony:ImageLoader";
-
-    private static final long MAX_TASKS = 20;
+    private static final int CACHE_SIZE = 20;       // in Percent of application heap size
+    private static final int MAX_ASYNC_TASKS = 20;  // Maximum number of concurrent image tasks
 
     private ImageLruCache cache;
     private LruCache<Long,Boolean> badArtwork;
     private Context mContext;
     private Drawable mAppIcon;
+
+    /*
+     * We want to limit the number of async tasks running at a time. If we don't
+     * we will hog resources and may crash due to too many open files. So we use
+     * a counter to track the number of active tasks.
+     *
+     * And we keep a queue of deferred images for when we are limiting the number
+     * of async tasks.
+     */
     private int mAsyncTaskCount;
+    private class WorkItem {
+        public long imageID;
+        public ImageView imageView;
+
+        WorkItem(long id, ImageView view) {
+            imageID = id;
+            imageView = view;
+        }
+    }
+    Queue<WorkItem> deferredQueue = new ConcurrentLinkedQueue<WorkItem>();
+
 
     private class ImageLruCache extends LruCache<Long, Bitmap> {
 
@@ -67,8 +111,15 @@ public class ImageLoader implements ComponentCallbacks2 {
                 Context.ACTIVITY_SERVICE);
         mContext = context;
         mAppIcon = mContext.getDrawable(R.drawable.ic_launcher_icon);
+
+        /*
+         *  Get the heap size for our application in MB and compute a
+         *  safe size for our image cache. Image cache sizze is in KB
+         */
         int maxKb = am.getMemoryClass() * 1024;
-        int limitKb = maxKb / 8; // 1/8th of total ram
+        int limitKb = (maxKb * CACHE_SIZE) / 100;
+        Log.d(TAG,"ImageLoader() - Application heap size: " + maxKb +" KB");
+        Log.d(TAG,"ImageLoader() - Image cache size: " + limitKb +" KB");
         cache = new ImageLruCache(limitKb);
         badArtwork = new LruCache<>(1000);
         mAsyncTaskCount = 0;
@@ -87,19 +138,36 @@ public class ImageLoader implements ComponentCallbacks2 {
             Log.d(TAG, "display(" + id + ") marked as bad.");
     }
 
-    private synchronized void startBackgroundImageExtraction(ImageView imageview, long id) {
-        if (mAsyncTaskCount <= MAX_TASKS) {
+    /*
+     *  Called from loadImage which is running in the UI thread. Since this
+     *  and backgroundImageExtractionFinished() are in the same thread we
+     *  don't need to worry about synchronizing them.
+     */
+    private void startBackgroundImageExtraction(ImageView imageview, long id) {
+        if (mAsyncTaskCount < MAX_ASYNC_TASKS) {
             mAsyncTaskCount++;
             new SetImageTask(imageview).execute(id);
         } else {
             Log.d(TAG, "startBackgroundImageExtraction(): Too many tasks.");
+            WorkItem work = new WorkItem(id, imageview);
+            deferredQueue.offer(work);
         }
     }
 
-    private synchronized void backgroundImageExtractionFinished() {
+    /*
+     *  Called only from the async task's onPostExecute() method which runs in
+     *  the UI thread.
+     */
+    private void backgroundImageExtractionFinished() {
         mAsyncTaskCount--;
         if (mAsyncTaskCount < 0)
             mAsyncTaskCount = 0;
+        WorkItem myWork = deferredQueue.poll();
+        while ((myWork != null) && (mAsyncTaskCount < MAX_ASYNC_TASKS)) {
+            mAsyncTaskCount++;
+            Log.d(TAG, "backgroundImageExtractionFinished(): Starting deferred task.");
+            new SetImageTask(myWork.imageView).execute(myWork.imageID);
+        }
         Log.d(TAG, "backgroundImageExtractionFinished(): Task count=" + mAsyncTaskCount);
     }
 
@@ -133,6 +201,9 @@ public class ImageLoader implements ComponentCallbacks2 {
             return 1;
         }
 
+        /*
+         *  onPostExecute runs in the UI thread, so we can update our image View in it.
+         */
         @Override
         protected void onPostExecute(Integer result) {
             if ((result == 1) && (bmp != null)) {
@@ -164,7 +235,6 @@ public class ImageLoader implements ComponentCallbacks2 {
             }
             return artwork;
         }
-
     }
 
     @Override
