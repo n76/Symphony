@@ -9,10 +9,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Clean up logic for getting track artwork. If track has no artwork use application's icon.
+- Not applicable
 
 ### Removed
 - Not applicable
+
+## [1.1.6] 2018-06-11
+### Changed
+- Clean up logic for getting track artwork. If track has no artwork use application's icon.
+- Add album artwork (from first song/track in album) to album selection.
 
 ## [1.1.5] 2018-06-08
 ### Changed

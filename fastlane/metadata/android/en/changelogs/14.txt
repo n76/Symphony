@@ -1,0 +1,5 @@
+v1.1.6 relased on 2018-06-10
+
+Changes
+- Clean up track artwork display. If track has no artwork use application's icon.
+- Add album artwork (from first song/track in album) to album selection.
