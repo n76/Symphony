@@ -991,7 +991,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 mPlayingAlbum.setText(currentTrack.getAlbum());
                 mPlayingSong.setText(currentTrack.getTitle());
                 mPlayingArtist.setText(currentTrack.getArtist());
-                mImageLoader.display(mPlayingSongId, mPlayingArtwork);
+                mImageLoader.loadImage(mPlayingSongId, mPlayingArtwork);
             }
         } else {
             mPlayingAlbum.setText("");

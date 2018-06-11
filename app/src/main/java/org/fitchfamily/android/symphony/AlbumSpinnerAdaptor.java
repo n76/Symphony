@@ -26,6 +26,7 @@ import android.support.annotation.Nullable;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,8 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 
 public class AlbumSpinnerAdaptor extends ArrayAdapter {
+    private static final String TAG = "Symphony:SpinnerAdaptor";
+
     public AlbumSpinnerAdaptor(@NonNull Context context, int resource) {
         super(context, resource);
     }
@@ -70,12 +73,14 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
             mViewHolder.mName = (TextView) convertView.findViewById(R.id.album_spinner_text);
             convertView.setTag(mViewHolder);
         } else {
+            Log.d(TAG,"getView() - Recycling view");
             mViewHolder = (ViewHolder) convertView.getTag();
         }
+
         try {
             Album a = mAlbums.get(position);
             mViewHolder.mName.setText(a.getTitle());
-            mImageLoader.display(a.getImageId(),mViewHolder.mImage);
+            mImageLoader.loadImage(a.getImageId(),mViewHolder.mImage);
         } catch (Exception e) {
             mViewHolder.mName.setText("Unknown");
             mViewHolder.mImage.setImageResource(R.drawable.ic_launcher_icon);

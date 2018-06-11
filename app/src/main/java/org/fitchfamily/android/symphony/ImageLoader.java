@@ -74,7 +74,7 @@ public class ImageLoader implements ComponentCallbacks2 {
         mAsyncTaskCount = 0;
     }
 
-    public void display(long id, ImageView imageview) {
+    public void loadImage(long id, ImageView imageview) {
         imageview.setImageDrawable(mAppIcon);
 
         Bitmap image = cache.get(id);
