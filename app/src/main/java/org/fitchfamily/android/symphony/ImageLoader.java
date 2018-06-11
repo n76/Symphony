@@ -65,7 +65,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ImageLoader implements ComponentCallbacks2 {
     private static final String TAG = "Symphony:ImageLoader";
     private static final int CACHE_SIZE = 20;       // in Percent of application heap size
-    private static final int MAX_ASYNC_TASKS = 20;  // Maximum number of concurrent image tasks
+    private static final int MAX_ASYNC_TASKS = 1;   // Maximum number of concurrent image tasks
 
     private ImageLruCache cache;
     private LruCache<Long,Boolean> badArtwork;

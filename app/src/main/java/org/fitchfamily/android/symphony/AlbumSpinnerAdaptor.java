@@ -73,7 +73,7 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
             mViewHolder.mName = (TextView) convertView.findViewById(R.id.album_spinner_text);
             convertView.setTag(mViewHolder);
         } else {
-            Log.d(TAG,"getView() - Recycling view");
+            //Log.d(TAG,"getView() - Recycling view");
             mViewHolder = (ViewHolder) convertView.getTag();
         }
 
