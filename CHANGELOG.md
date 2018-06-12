@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Improve appearance of user interface.
-- Updated screenshots
+- Not applicable
 
 ### Removed
 - Not applicable
+
+## [1.1.7] 2018-06-12
+### Changed
+- Improve appearance of user interface.
+- Updated screenshots
 
 ## [1.1.6] 2018-06-11
 ### Changed

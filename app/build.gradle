@@ -6,8 +6,8 @@ android {
         applicationId "org.fitchfamily.android.symphony"
         minSdkVersion 21
         targetSdkVersion 25
-        versionCode 14
-        versionName "1.1.6"
+        versionCode 15
+        versionName "1.1.7"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -20,6 +20,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:appcompat-v7:25.3.1'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'com.android.support:appcompat-v7:25.4.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.1'
 }
