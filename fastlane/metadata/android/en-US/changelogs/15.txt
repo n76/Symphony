@@ -1,1 +1,2 @@
+- Improve appearance of user interface.
 - Updated screenshots

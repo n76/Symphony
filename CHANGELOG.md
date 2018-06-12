@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
+- Improve appearance of user interface.
 - Updated screenshots
 
 ### Removed
