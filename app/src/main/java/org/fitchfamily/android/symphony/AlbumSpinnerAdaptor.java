@@ -84,7 +84,7 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
             mViewHolder.mName.setText(a.getTitle());
             mImageLoader.loadImage(a.getImageId(),mViewHolder.mImage);
         } catch (Exception e) {
-            mViewHolder.mName.setText("Unknown");
+            mViewHolder.mName.setText(R.string.unknown);
             mViewHolder.mImage.setImageResource(R.drawable.ic_launcher_icon);
         }
         return convertView;

@@ -711,6 +711,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                             genreCursor.getString(nameColumn)
                     ));
                 } while (genreCursor.moveToNext());
+                genreCursor.close();
             }
             Collections.sort(genres, new Comparator<Genre>() {
                 @Override
@@ -759,6 +760,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         musicCursor.getInt(trackColumn)));
             }
             while (musicCursor.moveToNext());
+            musicCursor.close();
         }
         Collections.sort(rsltPlayList, new Comparator<Song>(){
             public int compare(Song a, Song b){

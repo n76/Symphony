@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingLeft="5dp">
+    android:paddingStart="5dp"
+    android:paddingEnd="5dp"
+    >
 
     <TextView
         android:id="@+id/playing_album"
@@ -20,7 +22,7 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="?android:attr/textColorPrimary"
         android:textStyle="bold"
-        android:text="Album Name"/>
+        android:text="@string/album_placeholder"/>
 
     <TextView
         android:id="@+id/playing_song"
@@ -33,7 +35,7 @@
         android:textAlignment="textStart"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="?android:attr/textColorSecondary"
-        android:text="Track Name"/>
+        android:text="@string/track_placeholder"/>
 
     <TextView
         android:id="@+id/playing_artist"
@@ -46,6 +48,6 @@
         android:textAlignment="textStart"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="?android:attr/textColorSecondary"
-        android:text="Artist"/>
+        android:text="@string/artist_placeholder"/>
 
 </LinearLayout>
