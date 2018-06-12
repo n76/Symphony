@@ -41,7 +41,6 @@ import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -127,8 +126,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     // View and display related
     //
-    // Toolbar
-    private Toolbar toolbar;
     private Spinner shuffleSpinner;
 
     // Viewing songs
@@ -630,11 +627,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //  Local utility routines
     //
     private void initToolBar() {
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
         shuffleSpinner = (Spinner)findViewById(R.id.shuffle_select);
-
-        // toolbar.setTitle(R.string.toolbarTitle);
-        setSupportActionBar(toolbar);
 
         ArrayAdapter<CharSequence> adapter =
                 ArrayAdapter.createFromResource(this,R.array.play_select,android.R.layout.simple_spinner_item);

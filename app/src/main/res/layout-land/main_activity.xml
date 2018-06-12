@@ -1,72 +1,93 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical"
-    tools:context=".MainActivity"
-    android:background="@color/colorDark">
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
 
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="45dp"
-        android:background="@color/colorDark"
-        android:minHeight="?android:attr/actionBarSize">
-
-        <Spinner
-            android:id="@+id/shuffle_select"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:entries="@array/play_select"/>
-    </android.support.v7.widget.Toolbar>
-
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <RelativeLayout
-            android:layout_width="0dip"
-            android:layout_height="fill_parent"
-            android:layout_weight="0.4">
+    <RelativeLayout
+        android:layout_width="0dip"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.4"
+        android:background="@color/colorDark">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                >
+
+                <Spinner
+                    android:id="@+id/shuffle_select"
+                    android:entries="@array/play_select"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    />
 
                 <Spinner
                     android:id="@+id/genre_select"
-                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"
-                    android:backgroundTint="@color/colorDark"/>
+                    android:layout_width="match_parent"
+                    />
 
                 <Spinner
                     android:id="@+id/album_select"
-                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"
-                    android:backgroundTint="@color/colorDark"/>
-
-                <!-- PLAYER_CONTROLS -->
-                <include layout="@layout/player_controls" />
+                    android:layout_width="match_parent"
+                    />
             </LinearLayout>
-        </RelativeLayout>
+    </RelativeLayout>
 
-        <RelativeLayout
-            android:layout_width="0dip"
-            android:layout_height="fill_parent"
-            android:layout_weight="0.6">
+    <RelativeLayout
+        android:layout_width="0dip"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.6">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
             <ListView
                 android:id="@+id/song_list"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:background="@color/colorLight"
                 />
-        </RelativeLayout>
-    </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:layout_marginTop="2dp"
+                android:background="@color/colorMedium">
+
+                <!-- PLAYER_CONTROLS -->
+                <include layout="@layout/player_buttons" />
+
+                <!-- PLAYER SEEK TO BAR -->
+                <include layout="@layout/player_seek" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                <!-- PLAYING SONG INFO -->
+                <ImageView
+                    android:id="@+id/cover_art"
+                    android:layout_width="55dp"
+                    android:layout_height="55dp"
+                    android:padding="2dp"
+                    android:src="@drawable/ic_launcher_icon"
+                    android:contentDescription="@string/song_art_description"/>
+
+                <include layout="@layout/player_info" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </LinearLayout>
+    </RelativeLayout>
 </LinearLayout>
+

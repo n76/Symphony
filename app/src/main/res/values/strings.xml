@@ -10,9 +10,14 @@
     <string name="toolbarTitle">Symphony</string>
     <string name="settings_play_order">Play Order</string>
     <string name="settings_play_order_summary">Control the order that tracks will be played.</string>
-    <string name="settings_sequential">Sequential</string>
+    <string name="settings_sequential">Sequential Play</string>
     <string name="settings_random_track">Shuffle Track</string>
     <string name="settings_random_album">Shuffle Album</string>
+    <string name="song_art_description">Song Artwork</string>
+
+    <string name="mode_spinner_label">Play Mode: </string>
+    <string name="genre_spinner_label">Genre: </string>
+    <string name="album_spinner_label">Album: </string>
 
     <string-array name="play_select">
         <item>Sequential</item>
