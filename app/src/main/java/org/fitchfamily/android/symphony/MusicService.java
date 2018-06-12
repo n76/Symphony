@@ -284,7 +284,7 @@ public class MusicService extends Service implements
                     break;
             }
             return rslt;
-        };
+        }
     }
     public IndexInfo playingIndexInfo;  // Information and control of currently playing track
     public IndexInfo onDeckIndexInfo;   // Information and control of next track to be played

@@ -1,19 +1,6 @@
 <resources>
     <string name="app_name">Symphony</string>
 
-    <string name="req_ext_storage_perm">外部ストレージにアクセスするアクセス許可。</string>
-    <string name="req_ext_storage_rationale">音楽はよく外部ストレージに保存されるため、検索や読み込みにアクセス許可が必要です。</string>
-
-    <string name="button_shuffle">シャッフル</string>
-    <string name="button_end">終了</string>
-
-    <string name="toolbarTitle">Symphony</string>
-    <string name="settings_play_order">再生順</string>
-    <string name="settings_play_order_summary">トラックが再生される順序をコントロール。</string>
-    <string name="settings_sequential">順番</string>
-    <string name="settings_random_track">ランダムトラック</string>
-    <string name="settings_random_album">ランダムアルバム</string>
-
     <string name="song_art_description">Song Artwork</string>
     <string name="album_art_description">Album Artwork</string>
 

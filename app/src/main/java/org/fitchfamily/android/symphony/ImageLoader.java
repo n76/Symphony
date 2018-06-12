@@ -102,8 +102,7 @@ public class ImageLoader implements ComponentCallbacks2 {
 
         @Override
         protected int sizeOf(Long key, Bitmap value) {
-            int kbOfBitmap = value.getByteCount() / 1024;
-            return kbOfBitmap;
+            return value.getByteCount() / 1024;
         }
     }
 
