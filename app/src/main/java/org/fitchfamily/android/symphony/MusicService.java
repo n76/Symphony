@@ -36,7 +36,6 @@ import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
@@ -111,9 +110,9 @@ public class MusicService extends Service implements
     // For Audio "Focus", support pausing or reducing volume with other apps
     // wish to use audio output (alerts, etc.)
     private boolean haveAudioFocus = false;
-    private Handler mHandler = new Handler();
-    AudioManager am;
-    AudioManager.OnAudioFocusChangeListener afChangeListener =
+    //private Handler mHandler = new Handler();
+    private AudioManager am;
+    private AudioManager.OnAudioFocusChangeListener afChangeListener =
             new AudioManager.OnAudioFocusChangeListener() {
                 public void onAudioFocusChange(int focusChange) {
                     if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
@@ -284,8 +283,8 @@ public class MusicService extends Service implements
             return rslt;
         }
     }
-    public IndexInfo playingIndexInfo;  // Information and control of currently playing track
-    public IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
+    private IndexInfo playingIndexInfo;  // Information and control of currently playing track
+    private IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
 
     private int[] history;              // Recently played tracks
     private int historyPosition;        // Current location in history
@@ -352,7 +351,7 @@ public class MusicService extends Service implements
         Log.d(TAG,"setList() entry.");
         resetToInitialState();
         songs=theSongs;
-        albums=Album.getAlbumIndexes(songs,this);
+        albums=Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
         albumOrder = genPlayOrder(albums.size());
         resetHistory();
@@ -562,10 +561,7 @@ public class MusicService extends Service implements
     }
 
     public synchronized boolean isPlaying(){
-        //Log.d(TAG,"isPlaying() entry.");
-        if (currentTrackPlayer != null)
-            return currentTrackPlayer.isPlaying();
-        return false;
+        return (currentTrackPlayer != null) && currentTrackPlayer.isPlaying();
     }
 
     public synchronized boolean hasTrack() {

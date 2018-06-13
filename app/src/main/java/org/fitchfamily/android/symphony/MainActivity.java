@@ -84,10 +84,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     // Information to save display or playing state information
     //
     private class PlayInfo {
-        public String genreName;        // Name of playing/display genre
-        public int trackId;             // ID of the playing/display track
-        public int position;            // Play position of the track.
-        public int shuffle;             // Current shuffle mode
+        protected String genreName;        // Name of playing/display genre
+        protected int trackId;             // ID of the playing/display track
+        protected int position;            // Play position of the track.
+        protected int shuffle;             // Current shuffle mode
 
         PlayInfo() {
             genreName = "";
@@ -121,8 +121,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private PlayInfo playingInfo = null;
     private PlayInfo displayInfo = null;
 
-    private String playingGenreName = null;
-
     //
     // View and display related
     //
@@ -147,8 +145,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private long mPlayingSongId;
 
     //runs without a timer by reposting this handler at the end of the runnable
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable;
+    private Handler timerHandler = new Handler();
+    private Runnable timerRunnable;
 
     //
     // The service that actually does the playing
@@ -183,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         }
     };
-    LocalBroadcastManager servicePlayUpdateBroadcastManager;
+    private LocalBroadcastManager servicePlayUpdateBroadcastManager;
 
     //
     // "Normal" methods to override on any activity
@@ -203,9 +201,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         playingInfo = restorePreferences();
         displayInfo = new PlayInfo(playingInfo);
 
-        genres = new ArrayList<Genre>();
-        currentDisplayPlayList = new ArrayList<Song>();
-        currentDisplayAlbums = new ArrayList<Album>();
+        genres = new ArrayList<>();
+        currentDisplayPlayList = new ArrayList<>();
+        currentDisplayAlbums = new ArrayList<>();
 
         setupDisplay(displayInfo);
 
@@ -450,9 +448,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public boolean isPlaying() {
-        if (musicSrv != null)
-            return musicSrv.isPlaying();
-        return false;
+        return (musicSrv != null) && musicSrv.isPlaying();
     }
 
     @Override
@@ -518,7 +514,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     // Note that trailing spaces are dropped in XML so we a one here.
     //
-    public String genSortTitle(String a) {
+    private String genSortTitle(String a) {
         Resources res = getResources();
         String[] prefixes = res.getStringArray(R.array.ignore_prefixes);
         String a1 = a.trim();
@@ -732,7 +728,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ArrayList<Song> getGenreSongs(long genreId) {
         Log.d(TAG, "getGenreSongs() entry");
 
-        ArrayList<Song> rsltPlayList = new ArrayList<Song>();
+        ArrayList<Song> rsltPlayList = new ArrayList<>();
         final Uri musicUri = MediaStore.Audio.Genres.Members.getContentUri("external",genreId);
 
         ContentResolver musicResolver = getContentResolver();
@@ -815,7 +811,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             currentDisplayPlayList.clear();
             currentDisplayPlayList.addAll(genrePlaylist);
 
-            ArrayList<Album> genreAlbums = Album.getAlbumIndexes(genrePlaylist, this);
+            ArrayList<Album> genreAlbums = Album.getAlbumIndexes(genrePlaylist);
 
             currentDisplayAlbums.clear();
             if (genreAlbums != null)

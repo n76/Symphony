@@ -91,7 +91,7 @@ public class ImageLoader implements ComponentCallbacks2 {
             imageView = view;
         }
     }
-    Queue<WorkItem> deferredQueue = new ConcurrentLinkedQueue<WorkItem>();
+    private Queue<WorkItem> deferredQueue = new ConcurrentLinkedQueue<>();
 
 
     private class ImageLruCache extends LruCache<Long, Bitmap> {

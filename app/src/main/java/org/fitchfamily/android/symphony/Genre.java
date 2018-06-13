@@ -26,7 +26,6 @@ import java.util.ArrayList;
  */
 
 public class Genre {
-    private static final String TAG = "Symphony:Genre";
     private long id;
     private String name;
     private ArrayList<Song> playlist;

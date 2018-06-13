@@ -19,7 +19,6 @@
 
 package org.fitchfamily.android.symphony;
 
-import android.content.Context;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ public class Album {
 
     private static final String TAG = "Symphony:Album";
 
-    public Album(long albumId,
+    private Album(long albumId,
                  String albumTitle,
                  long imageID,
                  int songTrack) {
@@ -51,9 +50,9 @@ public class Album {
     public String getTitle(){return title;}
     public int getTrack(){return trackIndex;}       // Index to first song/track in album
 
-    public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs, Context context) {
+    public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs) {
         Log.d(TAG,"getAlbumIndexes() entry.");
-        ArrayList<Album> rslt = new ArrayList<Album>();
+        ArrayList<Album> rslt = new ArrayList<>();
 
         long   aId = 0;
         for (int i=0; i<songs.size(); i++) {
