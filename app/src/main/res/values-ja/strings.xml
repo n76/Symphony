@@ -1,19 +1,19 @@
 <resources>
     <string name="app_name">Symphony</string>
 
-    <string name="song_art_description">Song Artwork</string>
-    <string name="album_art_description">Album Artwork</string>
+    <string name="song_art_description">ソングアートワーク</string>
+    <string name="album_art_description">アルバムアートワーク</string>
 
-    <string name="mode_spinner_label">Play Mode: </string>
-    <string name="genre_spinner_label">Genre: </string>
-    <string name="album_spinner_label">Album: </string>
+    <string name="mode_spinner_label">プレイモード </string>
+    <string name="genre_spinner_label">ジャンル </string>
+    <string name="album_spinner_label">アルバム </string>
 
-    <string name="album_placeholder">Album Name</string>
-    <string name="track_placeholder">Track Name</string>
-    <string name="artist_placeholder">Artist Name</string>
+    <string name="album_placeholder">アルバム名</string>
+    <string name="track_placeholder">曲名</string>
+    <string name="artist_placeholder">アーティスト名</string>
 
     <!-- Place holder when name of album not available -->
-    <string name="unknown">Unknown</string>
+    <string name="unknown">未知の</string>
 
     <string-array name="play_select">
         <item>順番</item>
