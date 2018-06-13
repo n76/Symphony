@@ -1,4 +1,4 @@
-<img src="fastlane/metadata/android/en/images/featureGraphic.png"/>
+<img src="fastlane/metadata/android/en-US/images/featureGraphic.png"/>
 
 Symphony - A music player for Android
 =====================================
@@ -12,7 +12,7 @@ Features
 
 Screenshots
 ===========
-<img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot1.png" width="150"/><img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot2.png" width="150"/><img src="fastlane/metadata/android/en/images/phoneScreenshots/Screenshot3.png" width="150"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot1.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot2.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot3.png" width="150"/>
 
 Why the name “Symphony”?
 ========================
