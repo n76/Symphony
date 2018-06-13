@@ -17,7 +17,7 @@ android:layout_height="match_parent">
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_toEndOf="@+id/album_spinner_image"
-    android:layout_toRightOf="@+id/album_spinner_image"
     android:padding="5dp"
-    android:textStyle="bold" />
+    android:textStyle="bold"
+    android:text="@string/album_placeholder"/>
 </RelativeLayout>

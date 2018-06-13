@@ -84,7 +84,6 @@ public class Song {
             mmr.setDataSource(mContext, trackUri);
 
             byte[] data = mmr.getEmbeddedPicture();
-            //coverart is an Imageview object
 
             // convert the byte array to a bitmap
             if (data != null)
@@ -94,12 +93,14 @@ public class Song {
             artwork = null;
         }
         if (artwork == null) {
-                Drawable drawable = mContext.getDrawable(R.drawable.ic_launcher_icon);
+            Drawable drawable = mContext.getDrawable(R.drawable.ic_launcher_icon);
+            if (drawable != null) {
                 artwork = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
                         drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(artwork);
                 drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                 drawable.draw(canvas);
+            }
         }
         return artwork;
     }

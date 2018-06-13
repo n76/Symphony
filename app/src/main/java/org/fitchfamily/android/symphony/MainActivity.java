@@ -164,20 +164,22 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             String mAction = intent.getAction();
             Log.d(TAG, "servicePlayingUpdateReceiver.onReceive("+mAction+")");
 
-            switch (mAction) {
-                case MusicService.SERVICE_NOW_PLAYING:
-                case MusicService.SERVICE_PAUSED:
-                    playingInfo.trackId = intent.getIntExtra("songIndex",0);
-                    if (displayInfo.genreName.equals(playingInfo.genreName)) {
-                        displayInfo.trackId = playingInfo.trackId;
-                        selectDisplayAlbum(playingInfo.trackId);
-                        songView.setSelection(playingInfo.trackId);
-                        updateControls();
-                    }
-                    break;
+            if (mAction != null) {
+                switch (mAction) {
+                    case MusicService.SERVICE_NOW_PLAYING:
+                    case MusicService.SERVICE_PAUSED:
+                        playingInfo.trackId = intent.getIntExtra("songIndex", 0);
+                        if (displayInfo.genreName.equals(playingInfo.genreName)) {
+                            displayInfo.trackId = playingInfo.trackId;
+                            selectDisplayAlbum(playingInfo.trackId);
+                            songView.setSelection(playingInfo.trackId);
+                            updateControls();
+                        }
+                        break;
 
-                default:
-                    Log.d(TAG, "servicePlayingUpdateReceiver.onReceive() Unknown action");
+                    default:
+                        Log.d(TAG, "servicePlayingUpdateReceiver.onReceive() Unknown action");
+                }
             }
         }
     };
@@ -273,11 +275,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         Log.d(TAG, "onConfigurationChanged() entry.");
 
         // Checks the orientation of the screen
+        /*
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
 
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
 
         }
+        */
 
         setupDisplay(displayInfo);
 
@@ -383,9 +387,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         displayInfo.trackId = Integer.parseInt(view.getTag().toString());
         if (!displayInfo.genreName.equals(playingInfo.genreName)) {
             Genre myGenre = getGenreByName(displayInfo.genreName);
-            musicSrv.setList(myGenre.getPlaylist(), myGenre.getName());
-            playingInfo.genreName = displayInfo.genreName;
-            playingInfo.trackId = displayInfo.trackId;
+            if (myGenre != null) {
+                musicSrv.setList(myGenre.getPlaylist(), myGenre.getName());
+                playingInfo.genreName = displayInfo.genreName;
+                playingInfo.trackId = displayInfo.trackId;
+            }
         }
         musicSrv.playTrack(displayInfo.trackId);
         startSeekTracking();
@@ -446,7 +452,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     public boolean isPlaying() {
         if (musicSrv != null)
             return musicSrv.isPlaying();
-        Log.d(TAG, "isPlaying() musicSrv="+(musicSrv!=null));
         return false;
     }
 

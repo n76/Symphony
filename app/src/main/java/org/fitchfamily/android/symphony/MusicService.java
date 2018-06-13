@@ -28,8 +28,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.MediaPlayer;
@@ -392,15 +390,16 @@ public class MusicService extends Service implements
                     // Set the new play mode and set the shuffle index to select
                     // the current track.
                     shuffle = playMode;
-                    if (playingIndexInfo != null)
+                    if (playingIndexInfo != null) {
                         playingIndexInfo.shuffleChanged();
 
-                    // If we are playing something, then prepare the next track
-                    // using the new play mode.
-                    if (currentTrackPlayer != null) {
-                        onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                        currentTrackPlayer.setNextMediaPlayer(null);
-                        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+                        // If we are playing something, then prepare the next track
+                        // using the new play mode.
+                        if (currentTrackPlayer != null) {
+                            onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                            currentTrackPlayer.setNextMediaPlayer(null);
+                            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+                        }
                     }
                     break;
 
