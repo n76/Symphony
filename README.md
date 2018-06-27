@@ -14,9 +14,9 @@ Screenshots
 ===========
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot1.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot2.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot3.png" width="150"/>
 
-Why the name “Symphony”?
-========================
-Partly because [AndreasK](https://gitlab.com/AndreasK/unpopular-music-player) used the much better name [“Unpopular Music Player”](https://f-droid.org/packages/de.kromke.andreas.unpopmusicplayerfree/). And partly because it is tailored toward listening to classical music where a single composition usually consists of several movements.
+Frequently Asked Questions
+==========================
+[See our FAQ page.](FAQ.md)
 
 Operation
 =========
