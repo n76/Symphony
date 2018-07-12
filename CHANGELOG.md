@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Not applicable
+- Remove work around for Grom Audio adaptor metadata information display.
 
 ### Removed
 - Not applicable

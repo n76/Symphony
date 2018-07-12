@@ -897,17 +897,6 @@ public class MusicService extends Service implements
             String trackArtist = songToPlay.getArtist();
             Bitmap trackArtwork = songToPlay.getArtwork(getApplicationContext());
 
-            // If we are in random album mode, then swap artist and album so that the Grom
-            // USB-3 adaptor will display the album (symphony, Broadway show, etc.) title
-            // in the "DISC" field on the Prius multi-function display instead of its default
-            // artist information. See https://github.com/n76/Symphony/issues/5
-
-            if (shuffle == PLAY_RANDOM_ALBUM) {
-                String t = trackAlbum;
-                trackAlbum = trackArtist;
-                trackArtist = t;
-            }
-
             // Update the current metadata
             mediaSession.setMetadata(new MediaMetadata.Builder()
                     .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, trackArtwork)
