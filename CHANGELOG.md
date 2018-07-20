@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
-- Remove work around for Grom Audio adaptor metadata information display.
+- Avoid cutting off player controls on some displays.
 
 ### Removed
-- Not applicable
+- Remove work around for Grom Audio adaptor metadata information display.
 
 ## [1.1.7] 2018-06-12
 ### Changed
