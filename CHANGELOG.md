@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Not applicable
 
 ### Changed
+- Not applicable
+
+### Removed
+- Not applicable
+
+## [1.1.8]
+### Changed
 - Avoid cutting off player controls on some displays.
 
 ### Removed

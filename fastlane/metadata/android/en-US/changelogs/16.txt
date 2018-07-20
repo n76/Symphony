@@ -1,0 +1,2 @@
+- Remove work around for Grom Audio adaptor metadata information display.
+- Avoid cutting off player controls on some displays.
