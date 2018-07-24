@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 - Not applicable
 
+## [1.1.9]
+### Changed
+- Improve landscape display on some phones.
+
 ## [1.1.8]
 ### Changed
 - Avoid cutting off player controls on some displays.

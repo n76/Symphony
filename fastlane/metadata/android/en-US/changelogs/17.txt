@@ -1,0 +1,1 @@
+- Improve landscape display on some phones.
