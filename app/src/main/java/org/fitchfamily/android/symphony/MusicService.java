@@ -38,7 +38,6 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.os.RemoteException;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -121,17 +120,11 @@ public class MusicService extends Service implements
                         // mediaController.getTransportControls().pause();
                         pausePlayer();
                         // Wait 30 seconds before stopping playback
-                        /*
-                        mHandler.postDelayed(new Runnable() {
-                                                 @Override
-                                                 public void run() {
-                                                     currentTrackPlayer.stop();
-                                                 }
-                                             },
+/*
+                        mHandler.postDelayed((Runnable) () -> currentTrackPlayer.stop(),
                                 TimeUnit.SECONDS.toMillis(30));
-                                */
-                    }
-                    else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+*/
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                         // Pause playback
                         pausePlayer();
                     } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
@@ -157,6 +150,7 @@ public class MusicService extends Service implements
             }
         }
     }
+
     private IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
     private BecomingNoisyReceiver myNoisyAudioStreamReceiver = new BecomingNoisyReceiver();
 
@@ -251,22 +245,22 @@ public class MusicService extends Service implements
 
         private int nextTrackIndex(int currentIndex) {
             int rslt = currentIndex + 1;
-            switch (shuffle){
+            switch (shuffle) {
                 case PLAY_SEQUENTIAL:
-                    if(rslt >=songs.size())
-                        rslt =0;
+                    if (rslt >= songs.size())
+                        rslt = 0;
                     break;
 
                 case PLAY_RANDOM_SONG:
                     shuffleIndex++;
                     if (shuffleIndex >= songs.size())
-                        shuffleIndex=0;
+                        shuffleIndex = 0;
                     rslt = songOrder[shuffleIndex];
                     break;
 
                 case PLAY_RANDOM_ALBUM:
                     long curentAlbum = songs.get(currentIndex).getAlbumId();
-                    if(rslt >=songs.size()) {
+                    if (rslt >= songs.size()) {
                         rslt = 0;
                     }
                     long nextAlbum = songs.get(rslt).getAlbumId();
@@ -274,7 +268,7 @@ public class MusicService extends Service implements
                     if (curentAlbum != nextAlbum) {
                         shuffleIndex++;
                         if (shuffleIndex >= albums.size())
-                            shuffleIndex=0;
+                            shuffleIndex = 0;
                         int newAlbum = albumOrder[shuffleIndex];
                         rslt = albums.get(newAlbum).getTrack();
                     }
@@ -283,6 +277,7 @@ public class MusicService extends Service implements
             return rslt;
         }
     }
+
     private IndexInfo playingIndexInfo;  // Information and control of currently playing track
     private IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
 
@@ -290,13 +285,13 @@ public class MusicService extends Service implements
     private int historyPosition;        // Current location in history
     private boolean historyInhibit;     // Hack to keep from prev play adding to history.
 
-    private static final int NOTIFY_ID=1;
+    private static final int NOTIFY_ID = 1;
 
-    private int shuffle=PLAY_RANDOM_ALBUM;
+    private int shuffle = PLAY_RANDOM_ALBUM;
     private Random rand;
 
     private final IBinder musicBind = new MusicBinder();
-    private boolean noisyReceiverRegistered=false;
+    private boolean noisyReceiverRegistered = false;
 
     // Stuff to allow us to defer requested operations (like starting a track after it
     // has been prepared or positioning the playback point.
@@ -307,9 +302,9 @@ public class MusicService extends Service implements
     // current player says it is finished, we start the on-deck player and release the
     // old player.
 
-    public void onCreate(){
+    public void onCreate() {
         super.onCreate();
-        Log.d(TAG,"onCreate() entry.");
+        Log.d(TAG, "onCreate() entry.");
 
         currentTrackPlayer = null;
         onDeckTrackPlayer = null;
@@ -321,37 +316,32 @@ public class MusicService extends Service implements
         onDeckIndexInfo = null;
 
         resetHistory();
-        rand=new Random();
+        rand = new Random();
         am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG,"onStartCommand() entry.");
+        Log.d(TAG, "onStartCommand() entry.");
         if (mediaSessionManager == null) {
-            try {
-                initMediaSession();
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                stopSelf();
-            }
+            initMediaSession();
         }
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onDestroy() {
-        Log.d(TAG,"onDestroy() entry.");
+        Log.d(TAG, "onDestroy() entry.");
         resetToInitialState();
         stopForeground(true);
         super.onDestroy();
     }
 
-    public void setList(ArrayList<Song> theSongs, String theGenre){
-        Log.d(TAG,"setList() entry.");
+    public void setList(ArrayList<Song> theSongs, String theGenre) {
+        Log.d(TAG, "setList() entry.");
         resetToInitialState();
-        songs=theSongs;
-        albums=Album.getAlbumIndexes(songs);
+        songs = theSongs;
+        albums = Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
         albumOrder = genPlayOrder(albums.size());
         resetHistory();
@@ -360,8 +350,8 @@ public class MusicService extends Service implements
         playListGenre = theGenre;
     }
 
-    public synchronized void setShuffle(int playMode){
-        Log.d(TAG,"setShuffle("+Integer.toString(playMode)+") entry.");
+    public synchronized void setShuffle(int playMode) {
+        Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") entry.");
         if (shuffle != playMode) {
             switch (playMode) {
                 case PLAY_SEQUENTIAL:
@@ -378,7 +368,7 @@ public class MusicService extends Service implements
 
                     // If we have a on-deck player, cancel it as our play order is
                     // changing.
-                    if (currentTrackPlayer!=null) {
+                    if (currentTrackPlayer != null) {
                         currentTrackPlayer.setNextMediaPlayer(null);
                         if (onDeckTrackPlayer != null) {
                             onDeckTrackPlayer.release();
@@ -421,7 +411,7 @@ public class MusicService extends Service implements
 
     public class MusicBinder extends Binder {
         MusicService getService() {
-            Log.d(TAG,"MusicBinder.getService() entry.");
+            Log.d(TAG, "MusicBinder.getService() entry.");
             return MusicService.this;
         }
     }
@@ -433,7 +423,7 @@ public class MusicService extends Service implements
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d(TAG,"onUnbind() entry.");
+        Log.d(TAG, "onUnbind() entry.");
         resetToInitialState();
         return false;
     }
@@ -445,14 +435,14 @@ public class MusicService extends Service implements
     //
     @Override
     public synchronized void onCompletion(MediaPlayer mp) {
-        Log.d(TAG,"onCompletion() entry.");
-        if((currentTrackPlayer != null) && (currentTrackPlayer.getCurrentPosition()>0)) {
+        Log.d(TAG, "onCompletion() entry.");
+        if ((currentTrackPlayer != null) && (currentTrackPlayer.getCurrentPosition() > 0)) {
             currentTrackPlayer.reset();
             currentTrackPlayer.release();
             currentTrackPlayer = onDeckTrackPlayer;
             onDeckTrackPlayer = null;
             if (currentTrackPlayer != null) {
-                Log.d(TAG,"onCompletion() next track prepared, starting immediately.");
+                Log.d(TAG, "onCompletion() next track prepared, starting immediately.");
                 playingIndexInfo = onDeckIndexInfo;
                 tellTheWorld(SERVICE_NOW_PLAYING);
                 addToHistory(playingIndexInfo.getTrackIndex());
@@ -466,14 +456,14 @@ public class MusicService extends Service implements
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        Log.d(TAG,"onError(what="+what+", extra="+extra+") entry.");
+        Log.d(TAG, "onError(what=" + what + ", extra=" + extra + ") entry.");
         resetToInitialState();
         return false;
     }
 
     @Override
     public synchronized void onPrepared(MediaPlayer mp) {
-        Log.d(TAG,"onPrepared() entry.");
+        Log.d(TAG, "onPrepared() entry.");
         // Register a receiver to be notified about headphones being
         // unplugged then start playback
         if (currentTrackPlayer == mp) {
@@ -510,17 +500,17 @@ public class MusicService extends Service implements
     }
 
     public synchronized void playTrack(int trackIndex) {
-        Log.d(TAG,"playTrack("+trackIndex+") entry.");
+        Log.d(TAG, "playTrack(" + trackIndex + ") entry.");
         if ((trackIndex >= 0) && (trackIndex < songs.size())) {
             setTrack(trackIndex);
             deferredGo = true;
         } else {
-            Log.d(TAG,"playTrack("+trackIndex+") index out of bounds, max="+songs.size());
+            Log.d(TAG, "playTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
         }
     }
 
     public synchronized void setTrack(int trackIndex) {
-        Log.d(TAG,"setTrack("+trackIndex+") entry.");
+        Log.d(TAG, "setTrack(" + trackIndex + ") entry.");
         if ((trackIndex >= 0) && (trackIndex < songs.size())) {
             resetToInitialState();
             deferredGo = false;
@@ -528,24 +518,24 @@ public class MusicService extends Service implements
             onDeckIndexInfo = new IndexInfo(trackIndex);
             onDeckTrackPlayer = prepareTrack(trackIndex);
         } else {
-            Log.d(TAG,"setTrack("+trackIndex+") index out of bounds, max="+songs.size());
+            Log.d(TAG, "setTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
         }
     }
 
     // Items needed to support media controller calls from main activity.
-    public synchronized int getPosition(){
+    public synchronized int getPosition() {
         //Log.d(TAG,"getPosition() entry.");
         if (currentTrackPlayer != null)
             return currentTrackPlayer.getCurrentPosition();
-        Log.d(TAG,"getPosition() not playing?");
+        Log.d(TAG, "getPosition() not playing?");
         return 0;
     }
 
-    public synchronized int getDuration(){
+    public synchronized int getDuration() {
         //Log.d(TAG,"getDuration() entry.");
         if (currentTrackPlayer != null)
             return currentTrackPlayer.getDuration();
-        Log.d(TAG,"getDuration() not playing?");
+        Log.d(TAG, "getDuration() not playing?");
         return 0;
     }
 
@@ -560,7 +550,7 @@ public class MusicService extends Service implements
         return null;
     }
 
-    public synchronized boolean isPlaying(){
+    public synchronized boolean isPlaying() {
         return (currentTrackPlayer != null) && currentTrackPlayer.isPlaying();
     }
 
@@ -568,8 +558,8 @@ public class MusicService extends Service implements
         return (currentTrackPlayer != null);
     }
 
-    public synchronized void pausePlayer(){
-        Log.d(TAG,"pausePlayer() entry.");
+    public synchronized void pausePlayer() {
+        Log.d(TAG, "pausePlayer() entry.");
         if (currentTrackPlayer != null) {
             currentTrackPlayer.pause();
             tellTheWorld(SERVICE_PAUSED);
@@ -589,8 +579,8 @@ public class MusicService extends Service implements
         stopForeground(true);
     }
 
-    public synchronized void seek(int posn){
-        Log.d(TAG,"seek("+posn+") entry.");
+    public synchronized void seek(int posn) {
+        Log.d(TAG, "seek(" + posn + ") entry.");
         if (currentTrackPlayer != null)
             currentTrackPlayer.seekTo(posn);
         else {
@@ -600,7 +590,7 @@ public class MusicService extends Service implements
     }
 
     public synchronized void go() {
-        Log.d(TAG,"go() entry.");
+        Log.d(TAG, "go() entry.");
         if (currentTrackPlayer != null) {
             deferredGo = false;
             if (!haveAudioFocus) {
@@ -621,8 +611,8 @@ public class MusicService extends Service implements
             deferredGo = true;
     }
 
-    public synchronized void playPrev(){
-        Log.d(TAG,"playPrev() entry.");
+    public synchronized void playPrev() {
+        Log.d(TAG, "playPrev() entry.");
         // We maintain a list of the most recently played tracks in history[] so all we
         // have to do when requested to play previous is back up on the list and pick up
         // the previous song position.
@@ -630,10 +620,10 @@ public class MusicService extends Service implements
         // If we are asked to back up farther than we have history (negative song indexes)
         // ignore the request.
         historyPosition--;
-        if (historyPosition<0)
+        if (historyPosition < 0)
             historyPosition = history.length - 1;
         int prevSongIndex = history[historyPosition];
-        Log.d(TAG, "playPrev(): historyPosition="+historyPosition+", prevSongIndex="+prevSongIndex);
+        Log.d(TAG, "playPrev(): historyPosition=" + historyPosition + ", prevSongIndex=" + prevSongIndex);
         if (prevSongIndex >= 0) {
             historyInhibit = true;
             playTrack(prevSongIndex);
@@ -641,8 +631,8 @@ public class MusicService extends Service implements
     }
 
     //skip to next
-    public synchronized void playNext(){
-        Log.d(TAG,"playNext() entry.");
+    public synchronized void playNext() {
+        Log.d(TAG, "playNext() entry.");
         resetToInitialState();
         deferredGo = true;
         playingIndexInfo = null;
@@ -704,7 +694,7 @@ public class MusicService extends Service implements
 
     private void tellTheWorld(String status) {
         boolean isPlaying = SERVICE_NOW_PLAYING.equals(status);
-        Log.d(TAG,"tellTheWorld("+status+") isPlaying="+isPlaying);
+        Log.d(TAG, "tellTheWorld(" + status + ") isPlaying=" + isPlaying);
 
         notifyMainActivity(status);
         setMediaSessionState(isPlaying);
@@ -715,7 +705,7 @@ public class MusicService extends Service implements
     }
 
     private void notifyMainActivity(String status) {
-        Log.d(TAG,"notifyMainActivity("+status+") entry.");
+        Log.d(TAG, "notifyMainActivity(" + status + ") entry.");
         // Let the Main Activity know we are playing the song.
         Intent playingIntent = new Intent(status);
         int trackIndex = 0;
@@ -729,12 +719,12 @@ public class MusicService extends Service implements
         Integer[] rslt = new Integer[size];
 
         // create sorted card deck (each value only occurs once)
-        for (int i=0; i<size; i++)
+        for (int i = 0; i < size; i++)
             rslt[i] = i;
 
         // shuffle the card deck using Durstenfeld algorithm
-        for (int i=size-1; i>0; i--) {
-            int j=rand.nextInt(i);
+        for (int i = size - 1; i > 0; i--) {
+            int j = rand.nextInt(i);
             int t = rslt[i];
             rslt[i] = rslt[j];
             rslt[j] = t;
@@ -742,8 +732,8 @@ public class MusicService extends Service implements
         return rslt;
     }
 
-    private MediaPlayer initTrackPlayer(){
-        Log.d(TAG,"initTrackPlayer() entry.");
+    private MediaPlayer initTrackPlayer() {
+        Log.d(TAG, "initTrackPlayer() entry.");
 
         MediaPlayer newTrackPlayer = new MediaPlayer();
         //set currentTrackPlayer properties
@@ -782,12 +772,12 @@ public class MusicService extends Service implements
         historyInhibit = false;
         historyPosition = 0;
         history = new int[1000];
-        for (int i=0; i<history.length; i++)
+        for (int i = 0; i < history.length; i++)
             history[i] = -1;
     }
 
     private void addToHistory(int trackIndex) {
-        Log.d(TAG, "addToHistory("+trackIndex+") entry.");
+        Log.d(TAG, "addToHistory(" + trackIndex + ") entry.");
         if (historyInhibit) {
             historyInhibit = false;
         } else {
@@ -800,7 +790,7 @@ public class MusicService extends Service implements
 
     // Media Session stuff
 
-    private void initMediaSession() throws RemoteException {
+    private void initMediaSession() {
         Log.d(TAG, "initMediaSession() entry.");
         if (mediaSessionManager != null)
             return; //mediaSessionManager exists
@@ -869,12 +859,12 @@ public class MusicService extends Service implements
     }
 
     private void setMediaSessionState(boolean isPlaying) {
-        Log.d(TAG, "setMediaSessionState("+isPlaying+") entry.");
+        Log.d(TAG, "setMediaSessionState(" + isPlaying + ") entry.");
         if (isPlaying) {
             PlaybackState state = new PlaybackState.Builder()
                     .setActions(PlaybackState.ACTION_PAUSE |
                             PlaybackState.ACTION_SKIP_TO_NEXT |
-                            PlaybackState.ACTION_SKIP_TO_PREVIOUS )
+                            PlaybackState.ACTION_SKIP_TO_PREVIOUS)
                     .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
                     .build();
             mediaSession.setPlaybackState(state);
@@ -905,9 +895,9 @@ public class MusicService extends Service implements
                     .putString(MediaMetadata.METADATA_KEY_TITLE, trackTitle)
                     .build());
 
-            Log.d(TAG, "updateMetaData() trackAlbum="+trackAlbum);
-            Log.d(TAG, "updateMetaData() trackTitle="+trackTitle);
-            Log.d(TAG, "updateMetaData() trackArtist="+trackArtist);
+            Log.d(TAG, "updateMetaData() trackAlbum=" + trackAlbum);
+            Log.d(TAG, "updateMetaData() trackTitle=" + trackTitle);
+            Log.d(TAG, "updateMetaData() trackArtist=" + trackArtist);
         }
     }
 }

@@ -2,9 +2,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:background="@color/colorDark"
     android:orientation="vertical"
-    tools:context=".MainActivity"
-    android:background="@color/colorDark">
+    tools:context=".MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,15 +15,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:text="@string/mode_spinner_label"
-            />
+            android:text="@string/mode_spinner_label" />
+
         <Spinner
             android:id="@+id/shuffle_select"
-            android:layout_gravity="center_vertical"
-            android:layout_height="wrap_content"
             android:layout_width="match_parent"
-            android:entries="@array/play_select"
-            />
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:entries="@array/play_select" />
     </LinearLayout>
 
     <LinearLayout
@@ -32,17 +31,16 @@
         android:orientation="horizontal">
 
         <TextView
-            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/genre_spinner_label"/>
+            android:layout_gravity="center_vertical"
+            android:text="@string/genre_spinner_label" />
 
         <Spinner
-            android:layout_gravity="center_vertical"
             android:id="@+id/genre_select"
-            android:layout_height="wrap_content"
             android:layout_width="match_parent"
-            />
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical" />
     </LinearLayout>
 
     <LinearLayout
@@ -53,13 +51,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/album_spinner_label"/>
+            android:text="@string/album_spinner_label" />
 
         <Spinner
             android:id="@+id/album_select"
-            android:layout_height="wrap_content"
             android:layout_width="match_parent"
-        />
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <ListView
@@ -67,18 +64,17 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@color/colorLight"
-        />
+        android:background="@color/colorLight" />
 
     <!-- PLAYER_CONTROLS -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:background="@color/colorMedium"
         android:clickable="true"
         android:focusable="true"
-        android:orientation="vertical"
-        android:layout_marginTop="2dp"
-        android:background="@color/colorMedium">
+        android:orientation="vertical">
 
         <!-- PLAYER_CONTROLS -->
         <include layout="@layout/player_buttons" />
@@ -92,9 +88,9 @@
                 android:id="@+id/cover_art"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
+                android:contentDescription="@string/song_art_description"
                 android:padding="2dp"
-                android:src="@drawable/ic_launcher_icon"
-                android:contentDescription="@string/song_art_description"/>
+                android:src="@drawable/ic_launcher_icon" />
 
             <LinearLayout
                 android:layout_width="match_parent"
