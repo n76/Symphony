@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="4dp"
@@ -11,50 +12,50 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/app_name"
         android:onClick="skipBack"
         android:padding="12dp"
-        android:src="@drawable/ic_skip_backward" />
+        app:srcCompat="@drawable/ic_skip_backward" />
 
     <ImageButton
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/app_name"
         android:onClick="seekBack"
         android:padding="12dp"
-        android:src="@drawable/ic_seek_backward" />
+        app:srcCompat="@drawable/ic_seek_backward" />
 
     <ImageButton
         android:id="@+id/play_pause"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/app_name"
         android:onClick="stopOrPause"
         android:padding="12dp"
-        android:src="@drawable/ic_playback_start" />
+        app:srcCompat="@drawable/ic_playback_start" />
 
     <ImageButton
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/app_name"
         android:onClick="seekForward"
         android:padding="12dp"
-        android:src="@drawable/ic_seek_forward" />
+        app:srcCompat="@drawable/ic_seek_forward" />
 
     <ImageButton
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/app_name"
         android:onClick="skipForward"
         android:padding="12dp"
-        android:src="@drawable/ic_skip_forward" />
+        app:srcCompat="@drawable/ic_skip_forward" />
 </LinearLayout>
