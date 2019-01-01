@@ -1,1 +1,3 @@
-Yet another music player for Android, what makes this one different is that it supports playing random albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs (movements) played in the correct order.
+Yet another music player for Android.
+What makes this one different is that it supports playing random albums within a genre.
+It is tailored toward playing classical music and other genres, where you wish to listen to random albums (symphonies) with the songs (movements) played in the correct order.

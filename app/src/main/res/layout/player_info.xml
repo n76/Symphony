@@ -6,8 +6,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingStart="5dp"
-    android:paddingEnd="5dp"
-    >
+    android:paddingEnd="5dp">
 
     <TextView
         android:id="@+id/playing_album"
@@ -18,11 +17,11 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:scrollHorizontally="true"
         android:singleLine="true"
+        android:text="@string/album_placeholder"
         android:textAlignment="textStart"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="?android:attr/textColorPrimary"
-        android:textStyle="bold"
-        android:text="@string/album_placeholder"/>
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/playing_song"
@@ -32,10 +31,10 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:scrollHorizontally="true"
         android:singleLine="true"
+        android:text="@string/track_placeholder"
         android:textAlignment="textStart"
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="?android:attr/textColorSecondary"
-        android:text="@string/track_placeholder"/>
+        android:textColor="?android:attr/textColorSecondary" />
 
     <TextView
         android:id="@+id/playing_artist"
@@ -45,9 +44,9 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:scrollHorizontally="true"
         android:singleLine="true"
+        android:text="@string/artist_placeholder"
         android:textAlignment="textStart"
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="?android:attr/textColorSecondary"
-        android:text="@string/artist_placeholder"/>
+        android:textColor="?android:attr/textColorSecondary" />
 
 </LinearLayout>

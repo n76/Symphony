@@ -51,11 +51,11 @@ public class Song {
                 long songAlbumId,
                 String songComposer,
                 int songTrack) {
-        id=songId;
+        id = songId;
         if (songTitle != null)
-            title=songTitle.trim();
+            title = songTitle.trim();
         if (songArtist != null)
-            artist=songArtist.trim();
+            artist = songArtist.trim();
         if (songAlbum != null)
             album = songAlbum.trim();
         if (songAlbumSortName != null)
@@ -66,14 +66,37 @@ public class Song {
         track = songTrack;
     }
 
-    public long getId(){return id;}
-    public String getTitle(){return title;}
-    public String getArtist(){return artist;}
-    public String getAlbum(){return album;}
-    public String getAlbumSortTitle() {return albumSortTitle;}
-    public long getAlbumId(){return albumId;}
-    public String getComposer(){return composer;}
-    public int getTrack(){return track;}
+    public long getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public String getAlbum() {
+        return album;
+    }
+
+    public String getAlbumSortTitle() {
+        return albumSortTitle;
+    }
+
+    public long getAlbumId() {
+        return albumId;
+    }
+
+    public String getComposer() {
+        return composer;
+    }
+
+    public int getTrack() {
+        return track;
+    }
 
     public Bitmap getArtwork(Context mContext) {
         Bitmap artwork = null;

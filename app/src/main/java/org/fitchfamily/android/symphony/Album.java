@@ -36,30 +36,38 @@ public class Album {
     private static final String TAG = "Symphony:Album";
 
     private Album(long albumId,
-                 String albumTitle,
-                 long imageID,
-                 int songTrack) {
- //       Log.d(TAG,"Album() entry.");
-        id=albumId;
-        title=albumTitle;
+                  String albumTitle,
+                  long imageID,
+                  int songTrack) {
+//       Log.d(TAG,"Album() entry.");
+        id = albumId;
+        title = albumTitle;
         this.mImageId = imageID;
-        trackIndex=songTrack;
+        trackIndex = songTrack;
     }
 
-    public long getID(){return id;}
-    public String getTitle(){return title;}
-    public int getTrack(){return trackIndex;}       // Index to first song/track in album
+    public long getID() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getTrack() {
+        return trackIndex;
+    }       // Index to first song/track in album
 
     public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs) {
-        Log.d(TAG,"getAlbumIndexes() entry.");
+        Log.d(TAG, "getAlbumIndexes() entry.");
         ArrayList<Album> rslt = new ArrayList<>();
 
-        long   aId = 0;
-        for (int i=0; i<songs.size(); i++) {
+        long aId = 0;
+        for (int i = 0; i < songs.size(); i++) {
             if ((i == 0) || (songs.get(i).getAlbumId() != aId)) {
                 Song s = songs.get(i);
                 aId = s.getAlbumId();
-                rslt.add(new Album(aId,s.getAlbum(),s.getId(),i));
+                rslt.add(new Album(aId, s.getAlbum(), s.getId(), i));
             }
         }
         return rslt;
