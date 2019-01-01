@@ -2,17 +2,28 @@
 
 Symphony - A music player for Android
 =====================================
-Yet another music player for Android. What makes this one different is that it supports shuffle play of albums within a genre. It is tailored toward playing classical music and other genres where you wish to listen to a random albums (symphonies) with the songs/tracks (movements) played in the correct order.
+Yet another music player for Android. What makes this one different is that it supports shuffle playing of albums within a genre.
+It is tailored toward playing classical music and other genres where you wish to listen to random albums (symphonies) with the songs/tracks (movements) played in the correct order.
+
+<a href="https://f-droid.org/packages/org.fitchfamily.android.symphony/">
+    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+         alt="Get it on F-Droid" height="80">
+</a>
 
 Features
 ========
 - “Gap-less” playback.
 - Very simple interface.
-- Within a genre, tracks may be played in sequence, randomly or by random album.
+- Within a genre, tracks may be played in sequence, randomly, or by random albums.
 
 Screenshots
 ===========
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot1.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot2.png" width="150"/><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot3.png" width="150"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot1.png"
+width="150"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot2.png"
+width="150"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Screenshot3.png"
+width="150"/>
 
 Frequently Asked Questions
 ==========================
@@ -47,6 +58,5 @@ WAKE_LOCK|So the player can go to the background without stopping
 
 Update History
 ==============
-[History is now a separate file](CHANGELOG.md)
+[History is now a separate file](CHANGELOG.md).
 
-[![Get it on F-Droid](get_it_on_f-droid.png?raw=true)](https://f-droid.org/packages/org.fitchfamily.android.symphony/)

@@ -23,9 +23,6 @@
 package org.fitchfamily.android.symphony;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-// import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +31,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class AlbumSpinnerAdaptor extends ArrayAdapter {
     // private static final String TAG = "Symphony:SpinnerAdaptor";
@@ -71,8 +71,8 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
             LayoutInflater mInflater = (LayoutInflater) mContext.
                     getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = mInflater.inflate(R.layout.album_spinner_row, parent, false);
-            mViewHolder.mImage = (ImageView) convertView.findViewById(R.id.album_spinner_image);
-            mViewHolder.mName = (TextView) convertView.findViewById(R.id.album_spinner_text);
+            mViewHolder.mImage = convertView.findViewById(R.id.album_spinner_image);
+            mViewHolder.mName = convertView.findViewById(R.id.album_spinner_text);
             convertView.setTag(mViewHolder);
         } else {
             //Log.d(TAG,"getView() - Recycling view");
@@ -82,7 +82,7 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
         try {
             Album a = mAlbums.get(position);
             mViewHolder.mName.setText(a.getTitle());
-            mImageLoader.loadImage(a.getImageId(),mViewHolder.mImage);
+            mImageLoader.loadImage(a.getImageId(), mViewHolder.mImage);
         } catch (Exception e) {
             mViewHolder.mName.setText(R.string.unknown);
             mViewHolder.mImage.setImageResource(R.drawable.ic_launcher_icon);

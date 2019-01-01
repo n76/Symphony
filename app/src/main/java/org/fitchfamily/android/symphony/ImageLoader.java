@@ -60,8 +60,8 @@ import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ImageLoader implements ComponentCallbacks2 {
     private static final String TAG = "Symphony:ImageLoader";
@@ -69,7 +69,7 @@ public class ImageLoader implements ComponentCallbacks2 {
     private static final int MAX_ASYNC_TASKS = 1;   // Maximum number of concurrent image tasks
 
     private ImageLruCache cache;
-    private LruCache<Long,Boolean> badArtwork;
+    private LruCache<Long, Boolean> badArtwork;
     private Context mContext;
     private Drawable mAppIcon;
 
@@ -82,6 +82,7 @@ public class ImageLoader implements ComponentCallbacks2 {
      * of async tasks.
      */
     private int mAsyncTaskCount;
+
     private class WorkItem {
         public long imageID;
         public ImageView imageView;
@@ -91,6 +92,7 @@ public class ImageLoader implements ComponentCallbacks2 {
             imageView = view;
         }
     }
+
     private Queue<WorkItem> deferredQueue = new ConcurrentLinkedQueue<>();
 
 
@@ -120,12 +122,12 @@ public class ImageLoader implements ComponentCallbacks2 {
         try {
             maxKb = am.getMemoryClass() * 1024;
         } catch (Exception e) {
-            maxKb = 1024*1024*3;
-            Log.d(TAG,"ImageLoader() Unable to get heap size: " + e.getMessage());
+            maxKb = 1024 * 1024 * 3;
+            Log.d(TAG, "ImageLoader() Unable to get heap size: " + e.getMessage());
         }
         int limitKb = (maxKb * CACHE_SIZE) / 100;
-        Log.d(TAG,"ImageLoader() - Application heap size: " + maxKb +" KB");
-        Log.d(TAG,"ImageLoader() - Image cache size: " + limitKb +" KB");
+        Log.d(TAG, "ImageLoader() - Application heap size: " + maxKb + " KB");
+        Log.d(TAG, "ImageLoader() - Image cache size: " + limitKb + " KB");
         cache = new ImageLruCache(limitKb);
         badArtwork = new LruCache<>(1000);
         mAsyncTaskCount = 0;
@@ -137,8 +139,7 @@ public class ImageLoader implements ComponentCallbacks2 {
         Bitmap image = cache.get(id);
         if (image != null) {
             imageview.setImageBitmap(image);
-        }
-        else if (badArtwork.get(id) == null) {
+        } else if (badArtwork.get(id) == null) {
             startBackgroundImageExtraction(imageview, id);
         } else
             Log.d(TAG, "display(" + id + ") marked as bad.");
@@ -192,16 +193,15 @@ public class ImageLoader implements ComponentCallbacks2 {
                 bmp = getTrackArtwork(id);
                 if (bmp != null) {
                     cache.put(id, bmp);
-                }
-                else {
-                    Log.d(TAG, "doInBackground("+id+") - Unable to get artwork.");
-                    badArtwork.put(id,true);
+                } else {
+                    Log.d(TAG, "doInBackground(" + id + ") - Unable to get artwork.");
+                    badArtwork.put(id, true);
                     return 0;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                badArtwork.put(id,true);
-                Log.d(TAG, "doInBackground("+id+") - Unable to get artwork.");
+                badArtwork.put(id, true);
+                Log.d(TAG, "doInBackground(" + id + ") - Unable to get artwork.");
                 return 0;
             }
             return 1;
@@ -255,8 +255,7 @@ public class ImageLoader implements ComponentCallbacks2 {
     public void onTrimMemory(int level) {
         if (level >= TRIM_MEMORY_MODERATE) {
             cache.evictAll();
-        }
-        else if (level >= TRIM_MEMORY_BACKGROUND) {
+        } else if (level >= TRIM_MEMORY_BACKGROUND) {
             cache.trimToSize(cache.size() / 2);
         }
     }

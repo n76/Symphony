@@ -19,6 +19,7 @@
 
 package org.fitchfamily.android.symphony;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -26,21 +27,17 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.Manifest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.MediaStore;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -55,13 +52,16 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import org.fitchfamily.android.symphony.MusicService.MusicBinder;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.concurrent.TimeUnit;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
-import org.fitchfamily.android.symphony.MusicService.MusicBinder;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 @TargetApi(23)
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
@@ -153,14 +153,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private MusicService musicSrv = null;
     private Intent playIntent;
 
-    private boolean paused=false;
+    private boolean paused = false;
 
     // Receive notifications about what the music service is playing
     private BroadcastReceiver servicePlayingUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String mAction = intent.getAction();
-            Log.d(TAG, "servicePlayingUpdateReceiver.onReceive("+mAction+")");
+            Log.d(TAG, "servicePlayingUpdateReceiver.onReceive(" + mAction + ")");
 
             if (mAction != null) {
                 switch (mAction) {
@@ -181,7 +181,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         }
     };
-    private LocalBroadcastManager servicePlayUpdateBroadcastManager;
 
     //
     // "Normal" methods to override on any activity
@@ -192,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         Log.d(TAG, "onCreate() entry.");
 
         mImageLoader = new ImageLoader(this);
-        servicePlayUpdateBroadcastManager = LocalBroadcastManager.getInstance(this);
+        LocalBroadcastManager servicePlayUpdateBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MusicService.SERVICE_NOW_PLAYING);
         intentFilter.addAction(MusicService.SERVICE_PAUSED);
@@ -218,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         super.onStart();
         Log.d(TAG, "onStart() entry.");
 
-        if(playIntent==null){
+        if (playIntent == null) {
             playIntent = new Intent(this, MusicService.class);
             bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
@@ -226,15 +225,15 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause() entry.");
-        paused=true;
+        paused = true;
         stopSeekTracking();
     }
 
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume() entry.");
         if (musicSrv != null && musicSrv.hasTrack()) {
@@ -263,23 +262,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (musicSrv != null) {
             unbindService(musicConnection);
         }
-        musicSrv=null;
+        musicSrv = null;
         super.onDestroy();
     }
 
     @Override
-    public void onConfigurationChanged (Configuration newConfig) {
+    public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         Log.d(TAG, "onConfigurationChanged() entry.");
 
         // Checks the orientation of the screen
-        /*
+/*
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
 
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
 
         }
-        */
+*/
 
         setupDisplay(displayInfo);
 
@@ -291,15 +290,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     // Capture back key press and rather than exit, go to background
     //
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event)
-    {
-        switch(keyCode)
-        {
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode) {
             case KeyEvent.KEYCODE_BACK:
                 moveTaskToBack(true);
                 return true;
         }
-        return super.onKeyDown(keyCode,event);
+        return super.onKeyDown(keyCode, event);
     }
 
     //
@@ -310,12 +307,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     // Create and bind to our background music service
     //
-    private ServiceConnection musicConnection = new ServiceConnection(){
+    private ServiceConnection musicConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "musicConnection.onServiceConnected() entry.");
-            MusicBinder binder = (MusicBinder)service;
+            MusicBinder binder = (MusicBinder) service;
             //get service
             musicSrv = binder.getService();
             musicSrv.setShuffle(displayInfo.shuffle);
@@ -331,7 +328,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     };
 
     private void initializeMusicServerPlaylist(PlayInfo playInfo) {
-        if (playInfo != null){
+        if (playInfo != null) {
             Genre myGenre = getGenreByName(playInfo.genreName);
             if ((myGenre != null) && (myGenre.getPlaylist() != null)) {
                 musicSrv.setList(myGenre.getPlaylist(), myGenre.getName());
@@ -352,11 +349,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult() entry.");
-        for (int i=0; i<permissions.length; i++) {
+        for (int i = 0; i < permissions.length; i++) {
             int rslt = -999;
             if (grantResults.length > i)
                 rslt = grantResults[i];
-            Log.d(TAG, "onRequestPermissionsResult[" + permissions[i] +"] = " + rslt);
+            Log.d(TAG, "onRequestPermissionsResult[" + permissions[i] + "] = " + rslt);
         }
         if (grantResults.length > 0) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -365,7 +362,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         Log.d(TAG, "onActivityResult() EXT_STORE_REQUEST GRANTED");
                         setupGenreList(playingInfo);
                         initializeMusicServerPlaylist(playingInfo);
-                        return;
                     }
                 }
             } else {
@@ -376,12 +372,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
     }
 
-    public void songPicked(View view){
+    public void songPicked(View view) {
         // Note to self: song.xml in layouts specifies this method to be called when
         // a song is touched.
-        Log.d(TAG, "songPicked() entry. Selected item = "+ view.toString());
+        Log.d(TAG, "songPicked() entry. Selected item = " + view.toString());
         int selectedItem = Integer.parseInt(view.getTag().toString());
-        Log.d(TAG, "songPicked() selected= "+ selectedItem);
+        Log.d(TAG, "songPicked() selected= " + selectedItem);
         displayInfo.trackId = Integer.parseInt(view.getTag().toString());
         if (!displayInfo.genreName.equals(playingInfo.genreName)) {
             Genre myGenre = getGenreByName(displayInfo.genreName);
@@ -396,14 +392,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         updateControls();
     }
 
-    private void playNext(){
+    private void playNext() {
         musicSrv.playNext();
         startSeekTracking();
         updateControls();
     }
 
-    private void playPrev(){
-        Log.d(TAG,"playPrev() entry.");
+    private void playPrev() {
+        Log.d(TAG, "playPrev() entry.");
         musicSrv.playPrev();
         startSeekTracking();
         updateControls();
@@ -427,7 +423,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public int getDuration() {
-        if(musicSrv != null)
+        if (musicSrv != null)
             return musicSrv.getDuration();
         return 0;
     }
@@ -435,7 +431,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     public int getCurrentPosition() {
         // Log.d(TAG, "getCurrentPosition() Entry.");
-        if(musicSrv != null)
+        if (musicSrv != null)
             return musicSrv.getPosition();
         return 0;
 
@@ -485,7 +481,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     public void seekBack(View v) {
-        seekTo(Math.max(0,getCurrentPosition() - 5000));
+        seekTo(Math.max(0, getCurrentPosition() - 5000));
         updateControls();
     }
 
@@ -495,12 +491,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     public void skipBack(View v) {
-        Log.d(TAG,"skipBack() entry.");
+        Log.d(TAG, "skipBack() entry.");
         playPrev();
     }
 
     public void skipForward(View v) {
-        Log.d(TAG,"skipForward() entry.");
+        Log.d(TAG, "skipForward() entry.");
         playNext();
     }
 
@@ -531,21 +527,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         setContentView(R.layout.main_activity);
         initToolBar();
 
-        genreSpinner = (Spinner)findViewById(R.id.genre_select);
-        albumSpinner = (Spinner)findViewById(R.id.album_select);
-        songView = (ListView)findViewById(R.id.song_list);
+        genreSpinner = findViewById(R.id.genre_select);
+        albumSpinner = findViewById(R.id.album_select);
+        songView = findViewById(R.id.song_list);
 
-        mSeekBar = (SeekBar) findViewById(R.id.seekTo);
+        mSeekBar = findViewById(R.id.seekTo);
         initializeSeekBar();
 
-        mPlayPauseButton = (ImageButton) findViewById(R.id.play_pause);
+        mPlayPauseButton = findViewById(R.id.play_pause);
 
-        mPlayingAlbum = (TextView) findViewById(R.id.playing_album);
-        mPlayingSong = (TextView) findViewById(R.id.playing_song);
-        mPlayingArtist = (TextView) findViewById(R.id.playing_artist);
-        mDuration = (TextView) findViewById(R.id.duration);
-        mSongPosition = (TextView) findViewById(R.id.song_position);
-        mPlayingArtwork = (ImageView) findViewById(R.id.cover_art);
+        mPlayingAlbum = findViewById(R.id.playing_album);
+        mPlayingSong = findViewById(R.id.playing_song);
+        mPlayingArtist = findViewById(R.id.playing_artist);
+        mDuration = findViewById(R.id.duration);
+        mSongPosition = findViewById(R.id.song_position);
+        mPlayingArtwork = findViewById(R.id.cover_art);
         mPlayingSongId = -1;
 
         songAdt = new SongAdapter(this, currentDisplayPlayList);
@@ -561,7 +557,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void setupGenreList(PlayInfo playInfo) {
-        Log.d(TAG, "setupGenreList("+playInfo.toString()+") Entry.");
+        Log.d(TAG, "setupGenreList(" + playInfo.toString() + ") Entry.");
         getGenreList();
         try {
             ArrayAdapter<Genre> genreAdaptor = new ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, genres);
@@ -617,7 +613,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             setDisplayGenre(genreIndex);
             genreSpinner.setSelection(genreIndex);
 
-            if ((playInfo != null) && (playingInfo.genreName.equals(playInfo.genreName))) {
+            if (playingInfo.genreName.equals(playInfo.genreName)) {
                 displayInfo.trackId = Math.max(0, playInfo.trackId);
             }
             selectDisplayAlbum(displayInfo.trackId);
@@ -630,10 +626,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //  Local utility routines
     //
     private void initToolBar() {
-        shuffleSpinner = (Spinner)findViewById(R.id.shuffle_select);
+        shuffleSpinner = findViewById(R.id.shuffle_select);
 
         ArrayAdapter<CharSequence> adapter =
-                ArrayAdapter.createFromResource(this,R.array.play_select,android.R.layout.simple_spinner_item);
+                ArrayAdapter.createFromResource(this, R.array.play_select, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         shuffleSpinner.setAdapter(adapter);
         shuffleSpinner.setSelection(displayInfo.shuffle);
@@ -644,7 +640,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             public void onItemSelected(AdapterView<?> adapter, View v,
                                        int position, long id) {
                 // On selecting a spinner item
-                Log.d(TAG,"shuffleSpinner.setOnItemSelectedListener.onItemSelected("+position+")");
+                Log.d(TAG, "shuffleSpinner.setOnItemSelectedListener.onItemSelected(" + position + ")");
                 switch (position) {
                     case 0:
                         displayInfo.shuffle = MusicService.PLAY_SEQUENTIAL;
@@ -671,28 +667,28 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void initializeSeekBar() {
         mSeekBar.setOnSeekBarChangeListener(
-            new SeekBar.OnSeekBarChangeListener() {
-                int userSelectedPosition = 0;
+                new SeekBar.OnSeekBarChangeListener() {
+                    int userSelectedPosition = 0;
 
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-                    mUserIsSeeking = true;
-                }
-
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    if (fromUser) {
-                        userSelectedPosition = progress;
+                    @Override
+                    public void onStartTrackingTouch(SeekBar seekBar) {
+                        mUserIsSeeking = true;
                     }
-                    mSongPosition.setText(formatDuration(progress));
-                }
 
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                    mUserIsSeeking = false;
-                    musicSrv.seek(userSelectedPosition);
-                }
-            });
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        if (fromUser) {
+                            userSelectedPosition = progress;
+                        }
+                        mSongPosition.setText(formatDuration(progress));
+                    }
+
+                    @Override
+                    public void onStopTrackingTouch(SeekBar seekBar) {
+                        mUserIsSeeking = false;
+                        musicSrv.seek(userSelectedPosition);
+                    }
+                });
     }
 
 
@@ -716,12 +712,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 } while (genreCursor.moveToNext());
                 genreCursor.close();
             }
-            Collections.sort(genres, new Comparator<Genre>() {
-                @Override
-                public int compare(Genre o1, Genre o2) {
-                    return o1.getName().compareTo(o2.getName());
-                }
-            });
+            Collections.sort(genres, (o1, o2) -> o1.getName().compareTo(o2.getName()));
         }
     }
 
@@ -729,12 +720,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         Log.d(TAG, "getGenreSongs() entry");
 
         ArrayList<Song> rsltPlayList = new ArrayList<>();
-        final Uri musicUri = MediaStore.Audio.Genres.Members.getContentUri("external",genreId);
+        final Uri musicUri = MediaStore.Audio.Genres.Members.getContentUri("external", genreId);
 
         ContentResolver musicResolver = getContentResolver();
         Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
 
-        if(musicCursor!=null && musicCursor.moveToFirst()){
+        if (musicCursor != null && musicCursor.moveToFirst()) {
             //get columns
             int idColumn = musicCursor.getColumnIndex
                     (MediaStore.Audio.Media._ID);
@@ -765,21 +756,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             while (musicCursor.moveToNext());
             musicCursor.close();
         }
-        Collections.sort(rsltPlayList, new Comparator<Song>(){
-            public int compare(Song a, Song b){
-                // Sort by album title. If two titles the same, differentiate by ID.
-                // Within album, sort by track. If two tracks claim the same position
-                // differentiate by title.
+        Collections.sort(rsltPlayList, (a, b) -> {
+            // Sort by album title. If two titles the same, differentiate by ID.
+            // Within album, sort by track. If two tracks claim the same position
+            // differentiate by title.
 
-                int rslt = a.getAlbumSortTitle().compareTo(b.getAlbumSortTitle());
-                if (rslt == 0)
-                    rslt = (int)(a.getAlbumId() - b.getAlbumId());
-                if (rslt == 0)
-                    rslt = a.getTrack() - b.getTrack();
-                if (rslt == 0)
-                    rslt = a.getTitle().compareTo(b.getTitle());
-                return rslt;
-            }
+            int rslt = a.getAlbumSortTitle().compareTo(b.getAlbumSortTitle());
+            if (rslt == 0)
+                rslt = (int) (a.getAlbumId() - b.getAlbumId());
+            if (rslt == 0)
+                rslt = a.getTrack() - b.getTrack();
+            if (rslt == 0)
+                rslt = a.getTitle().compareTo(b.getTitle());
+            return rslt;
         });
         return rsltPlayList;
     }
@@ -793,12 +782,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     // genre we need to set the album list and the song list for the genre.
     //
     private void setDisplayGenre(int Position) {
-        Log.d(TAG, "setDisplayGenre("+Position+") Entry.");
+        Log.d(TAG, "setDisplayGenre(" + Position + ") Entry.");
         Genre selectedGenre = genres.get(Position);
         ArrayList<Song> genrePlaylist;
 
         if ((selectedGenre != null) &&
-            (displayInfo != null)) {
+                (displayInfo != null)) {
 
             // If this is the first time the genre has been selected then
             // the play list will be undefined. So build the list on first
@@ -829,9 +818,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             // Otherwise select the first track (and its album) in the genre.
             //
             if ((playingInfo != null) &&
-                playingInfo.genreName.equals(selectedGenre.getName()) &&
-                (musicSrv != null)) {
-                displayInfo.trackId = Math.max(0,musicSrv.getTrackIndex());
+                    playingInfo.genreName.equals(selectedGenre.getName()) &&
+                    (musicSrv != null)) {
+                displayInfo.trackId = Math.max(0, musicSrv.getTrackIndex());
             }
             displayInfo.genreName = selectedGenre.getName();
             songAdt.notifyDataSetChanged();
@@ -853,7 +842,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void selectDisplayAlbum(int trackId) {
-        Log.d(TAG, "selectDisplayAlbum("+trackId+") Entry.");
+        Log.d(TAG, "selectDisplayAlbum(" + trackId + ") Entry.");
         Song displaySong = getTrackInfo(trackId);
         if (displaySong != null) {
             String albumTitle = displaySong.getAlbum();
@@ -869,7 +858,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private int getGenreIndex(String name) {
-        Log.d(TAG, "getGenreIndex('"+name+"') Entry.");
+        Log.d(TAG, "getGenreIndex('" + name + "') Entry.");
         if ((genres == null) || (genres.isEmpty()) || (name == null)) {
             Log.d(TAG, "getGenreIndex(): Genre empty or desired name is null.");
             return 0;
@@ -877,7 +866,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         for (int i = 0; i < genres.size(); i++) {
             if (genres.get(i).getName().equals(name)) {
-                Log.d(TAG, "getGenreIndex('"+name+"') is index " + i);
+                Log.d(TAG, "getGenreIndex('" + name + "') is index " + i);
                 return i;
             }
         }
@@ -886,7 +875,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private Genre getGenreByName(String name) {
-        Log.d(TAG, "getGenreByName('"+name+"') Entry.");
+        Log.d(TAG, "getGenreByName('" + name + "') Entry.");
         if ((genres == null) || genres.isEmpty()) {
             Log.d(TAG, "getGenreByName(): Genre list null or empty.");
             return null;
@@ -899,12 +888,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         for (int i = 0; i < genres.size(); i++) {
             if (genres.get(i).getName().equals(name)) {
-                Log.d(TAG, "getGenreByName('"+name+"') is index " + i);
+                Log.d(TAG, "getGenreByName('" + name + "') is index " + i);
                 return genres.get(i);
             }
         }
 
-        Log.d(TAG, "getGenreByName('"+name+"'): No match for genre name.");
+        Log.d(TAG, "getGenreByName('" + name + "'): No match for genre name.");
         return genres.get(0);
     }
 
