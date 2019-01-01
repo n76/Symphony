@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not applicable
 
 ### Changed
-- Update Gradle version
+- Not applicable
 
 ### Removed
 - Not applicable
+
+## [1.1.10]
+### Changed
+- Update build environment.
 
 ## [1.1.9]
 ### Changed
