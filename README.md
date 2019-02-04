@@ -60,3 +60,7 @@ Update History
 ==============
 [History is now a separate file](CHANGELOG.md).
 
+Privacy Policy
+==============
+[Please read our privacy policy.](PRIVACY.md)
+
