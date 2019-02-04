@@ -1,4 +1,4 @@
-# Symphony 
+# Symphony
 
 # Privacy Policy
 
@@ -26,10 +26,13 @@ These permissions can be revoked when they are not needed, this is privy to only
 ## Types of Data Collected
 
 ### Personal Data
-The developer doesn't collect personally identifiable data while the software is being utilized.
+The developer doesn't collect personally identifiable data.
 
 ### Usage Data
-The developer doesn't collect usage data pages are viewed or are clicked.
+The developer doesn't collect usage data.
+
+### Installation Data
+The developer distributes this software via channels like F-Droid and GitHub where download counts are not maintained. So the developer has no knowledge or way to acquire knowledge that the user has installed or is using this software.
 
 ### Use of Data
 With the enablement of the storage permission, the software, and not the developer has the power to:
@@ -37,12 +40,11 @@ With the enablement of the storage permission, the software, and not the develop
 - Read the contents of your SD card
 - Modify or delete the contents of your SD card. Note: Software does not write to the SD card, this permission is only an Android OS side effect of being granted read access.
 
-## Crash reports sending
+## Crash reports
 
-Symphony is still a project under active development.  The developer needs to get information when it doesn't work to make it work.
+Symphony does not create or send crash reports. However, Symphony is still a project under active development and he developer needs to get information when it doesn't work to make it work.
 
-If you encounter any error while using the software, please open an issue on GitHub and it will be fixed.
-In the case of app crashes, try to include logcats in your reports, when possible.
+If you encounter any error while using the software, please open an issue on GitHub and it will be fixed. In the case of app crashes, try to include logcats in your reports, when possible.
 
 ## Service Providers
 
@@ -57,7 +59,7 @@ This software is intended for general use and has no restrictions on utilization
 
 ## Links To Other Sites
 
-Symphony does not contain links to other services. 
+Symphony does not contain links to other services.
 
 ## Changes To This Privacy Policy
 
@@ -67,7 +69,7 @@ It is advisable to check this policy occasionally for any changes. Changes to th
 
 ## Disclaimer
 
-Symphony is developed in good faith and for general use. The developer will not be held accountable for how you decide to use this software and will not be liable for any losses and/or damages in connection with the use of the software. 
+Symphony is developed in good faith and for general use. The developer will not be held accountable for how you decide to use this software and will not be liable for any losses and/or damages in connection with the use of the software.
 
 ## Contact Us
 
