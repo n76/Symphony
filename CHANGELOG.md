@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not applicable
 
 ### Changed
-- Not applicable
+- Added privacy policy.
+- Update Gradle version
 
 ### Removed
 - Not applicable
