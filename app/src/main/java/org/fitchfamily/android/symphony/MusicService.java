@@ -20,6 +20,8 @@
 package org.fitchfamily.android.symphony;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -36,9 +38,11 @@ import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+import androidx.core.app.NotificationCompat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -682,17 +686,32 @@ public class MusicService extends Service implements
     }
 
     private void setupForegroundNotification() {
+        String NOTIFICATION_CHANNEL_ID = "org.fitchfamily.android.symphony";
+
         // Let the Music Controller know we are playing the song.
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendInt = PendingIntent.getActivity(this, 0,
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder builder = new Notification.Builder(this);
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
 
-        builder.setContentIntent(pendInt)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentIntent(pendInt)
                 .setSmallIcon(R.drawable.ic_notification_icon)
-                .setOngoing(true);
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
             Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info

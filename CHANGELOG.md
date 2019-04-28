@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added privacy policy.
 - Update Gradle version.
 - Revise logic on previous track button: Previous track button now uses the shuffle list rather than tracking play history. This allows the previous button to be operational even if there was no previous track played (initial startup) and eliminates need for special handling to avoid putting previous track into play history.
-
+- Fix crash when starting notification on newer versions of Android (tested on 8.1)
 
 ### Removed
 - Not applicable

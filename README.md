@@ -53,6 +53,7 @@ Permissions
 ===========
 |Permission|Use|
 |:----------|:---|
+FOREGROUND_SERVICE|Required in Android 9.0 and higher to display player notification
 READ_EXTERNAL_STORAGE|Needed to access music stored on your microSD card.
 WAKE_LOCK|So the player can go to the background without stopping
 

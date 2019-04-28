@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">Symphony</string>
 
+    <!-- Strings for notifications in Android >= 9 -->
+    <string name="channel_name">Symphony</string>
+    <string name="channel_description">Symphony Music Player Control and Status</string>
+
     <string name="song_art_description">Song Artwork</string>
     <string name="album_art_description">Album Artwork</string>
 
