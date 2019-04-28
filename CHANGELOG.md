@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Added privacy policy.
-- Update Gradle version
+- Update Gradle version.
+- Revise logic on previous track button: Previous track button now uses the shuffle list rather than tracking play history. This allows the previous button to be operational even if there was no previous track played (initial startup) and eliminates need for special handling to avoid putting previous track into play history.
+
 
 ### Removed
 - Not applicable

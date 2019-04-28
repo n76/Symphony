@@ -30,7 +30,8 @@ import java.util.ArrayList;
 public class Album {
     private String title;
     private long id;
-    private int trackIndex;
+    private int firstTrackIndex;
+    private int lastTrackIndex;
     private long mImageId;
 
     private static final String TAG = "Symphony:Album";
@@ -38,12 +39,14 @@ public class Album {
     private Album(long albumId,
                   String albumTitle,
                   long imageID,
-                  int songTrack) {
+                  int startTrack,
+                  int endTrack) {
 //       Log.d(TAG,"Album() entry.");
         id = albumId;
         title = albumTitle;
         this.mImageId = imageID;
-        trackIndex = songTrack;
+        firstTrackIndex = startTrack;
+        lastTrackIndex = endTrack;
     }
 
     public long getID() {
@@ -55,21 +58,44 @@ public class Album {
     }
 
     public int getTrack() {
-        return trackIndex;
+        return firstTrackIndex;
     }       // Index to first song/track in album
+
+    public int getLastTrackIndex() {
+        return lastTrackIndex;
+    }
 
     public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs) {
         Log.d(TAG, "getAlbumIndexes() entry.");
         ArrayList<Album> rslt = new ArrayList<>();
 
-        long aId = 0;
+        long curAlbumId = 0;
+        int albumStartTrack = -1;
+        int albumEndTrack = -1;
+        String albumTitle = "";
+        long imageID = 0;
+
         for (int i = 0; i < songs.size(); i++) {
-            if ((i == 0) || (songs.get(i).getAlbumId() != aId)) {
-                Song s = songs.get(i);
-                aId = s.getAlbumId();
-                rslt.add(new Album(aId, s.getAlbum(), s.getId(), i));
+            Song s = songs.get(i);
+            long nextAlbumId = s.getAlbumId();
+            if (i==0) {
+                curAlbumId = nextAlbumId;
+                albumStartTrack = i;
+                albumEndTrack = i;
+                albumTitle = s.getAlbum();
+                imageID = s.getId();
+            } else if (nextAlbumId != curAlbumId) {
+                rslt.add(new Album(curAlbumId, albumTitle, imageID, albumStartTrack, albumEndTrack));
+                curAlbumId = nextAlbumId;
+                albumStartTrack = i;
+                albumEndTrack = i;
+                albumTitle = s.getAlbum();
+                imageID = s.getId();
+            } else {
+                albumEndTrack = i;
             }
         }
+        rslt.add(new Album(curAlbumId, albumTitle, imageID, albumStartTrack, albumEndTrack));
         return rslt;
     }
 

@@ -211,6 +211,40 @@ public class MusicService extends Service implements
             return shuffleIndex;
         }
 
+        public int getPrevShuffleIndex() {
+            int rslt = trackIndex - 1;
+            switch (shuffle) {
+                case PLAY_SEQUENTIAL:
+                    if (rslt < 0)
+                        rslt = songs.size() - 1;
+                    break;
+
+                case PLAY_RANDOM_SONG:
+                    shuffleIndex--;
+                    if (shuffleIndex < 0)
+                        shuffleIndex = songs.size() - 1;
+                    rslt = songOrder[shuffleIndex];
+                    break;
+
+                case PLAY_RANDOM_ALBUM:
+                    long curentAlbum = songs.get(trackIndex).getAlbumId();
+                    if (rslt < 0) {
+                        rslt = songs.size() - 1;
+                    }
+                    long nextAlbum = songs.get(rslt).getAlbumId();
+
+                    if (curentAlbum != nextAlbum) {
+                        shuffleIndex--;
+                        if (shuffleIndex < 0)
+                            shuffleIndex = albums.size() - 1;
+                        int newAlbum = albumOrder[shuffleIndex];
+                        rslt = albums.get(newAlbum).getLastTrackIndex();
+                    }
+                    break;
+            }
+            return rslt;
+        }
+
         private int setShuffleToTrack(int currentIndex) {
             int rslt = 0;
             switch (shuffle) {
@@ -282,10 +316,6 @@ public class MusicService extends Service implements
     private IndexInfo playingIndexInfo;  // Information and control of currently playing track
     private IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
 
-    private int[] history;              // Recently played tracks
-    private int historyPosition;        // Current location in history
-    private boolean historyInhibit;     // Hack to keep from prev play adding to history.
-
     private static final int NOTIFY_ID = 1;
 
     private int shuffle = PLAY_RANDOM_ALBUM;
@@ -316,7 +346,6 @@ public class MusicService extends Service implements
         playingIndexInfo = null;
         onDeckIndexInfo = null;
 
-        resetHistory();
         rand = new Random();
         am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
     }
@@ -345,7 +374,6 @@ public class MusicService extends Service implements
         albums = Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
         albumOrder = genPlayOrder(albums.size());
-        resetHistory();
         playingIndexInfo = null;
         onDeckIndexInfo = new IndexInfo();
         playListGenre = theGenre;
@@ -446,7 +474,6 @@ public class MusicService extends Service implements
                 Log.d(TAG, "onCompletion() next track prepared, starting immediately.");
                 playingIndexInfo = onDeckIndexInfo;
                 tellTheWorld(SERVICE_NOW_PLAYING);
-                addToHistory(playingIndexInfo.getTrackIndex());
 
                 // Setup an "on Deck" player for the next track to play
                 onDeckIndexInfo = new IndexInfo(playingIndexInfo);
@@ -486,8 +513,6 @@ public class MusicService extends Service implements
                     this.go();
                 else
                     tellTheWorld(SERVICE_PAUSED);
-
-                addToHistory(playingIndexInfo.getTrackIndex());
 
                 // Setup an "on Deck" player for the next track to play
                 onDeckIndexInfo = new IndexInfo(playingIndexInfo);
@@ -614,19 +639,11 @@ public class MusicService extends Service implements
 
     public synchronized void playPrev() {
         Log.d(TAG, "playPrev() entry.");
-        // We maintain a list of the most recently played tracks in history[] so all we
-        // have to do when requested to play previous is back up on the list and pick up
-        // the previous song position.
-        //
-        // If we are asked to back up farther than we have history (negative song indexes)
-        // ignore the request.
-        historyPosition--;
-        if (historyPosition < 0)
-            historyPosition = history.length - 1;
-        int prevSongIndex = history[historyPosition];
-        Log.d(TAG, "playPrev(): historyPosition=" + historyPosition + ", prevSongIndex=" + prevSongIndex);
+        int prevSongIndex = 0;
+
+        if (playingIndexInfo != null)
+            prevSongIndex = playingIndexInfo.getPrevShuffleIndex();
         if (prevSongIndex >= 0) {
-            historyInhibit = true;
             playTrack(prevSongIndex);
         }
     }
@@ -765,27 +782,6 @@ public class MusicService extends Service implements
         if (haveAudioFocus) {
             am.abandonAudioFocus(afChangeListener);
             haveAudioFocus = false;
-        }
-    }
-
-    private void resetHistory() {
-        Log.d(TAG, "resetHistory() entry.");
-        historyInhibit = false;
-        historyPosition = 0;
-        history = new int[1000];
-        for (int i = 0; i < history.length; i++)
-            history[i] = -1;
-    }
-
-    private void addToHistory(int trackIndex) {
-        Log.d(TAG, "addToHistory(" + trackIndex + ") entry.");
-        if (historyInhibit) {
-            historyInhibit = false;
-        } else {
-            historyPosition++;
-            if (historyPosition >= history.length)
-                historyPosition = 0;
-            history[historyPosition] = trackIndex;
         }
     }
 
