@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Not applicable
 
+## [1.1.12 - 29-Apr-2019]
+
+### Changed
+- Fix crash prev or next pressed when denied permission to access song storage.
+
 ## [1.1.11 - 04-Apr-2019]
 ### Changed
 - Added privacy policy.

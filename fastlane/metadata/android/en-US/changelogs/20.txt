@@ -1,0 +1,1 @@
+- Fix crash prev or next pressed when denied permission to access song storage.

@@ -393,16 +393,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void playNext() {
-        musicSrv.playNext();
-        startSeekTracking();
-        updateControls();
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            musicSrv.playNext();
+            startSeekTracking();
+            updateControls();
+        }
     }
 
     private void playPrev() {
-        Log.d(TAG, "playPrev() entry.");
-        musicSrv.playPrev();
-        startSeekTracking();
-        updateControls();
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            musicSrv.playPrev();
+            startSeekTracking();
+            updateControls();
+        }
     }
 
     // Media Controller methods
