@@ -1,0 +1,1 @@
+- Fix crash when next pressed and there are no tracks in genre.

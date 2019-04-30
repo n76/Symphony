@@ -643,7 +643,7 @@ public class MusicService extends Service implements
 
     public synchronized void playPrev() {
         Log.d(TAG, "playPrev() entry.");
-        int prevSongIndex = 0;
+        int prevSongIndex = -1;
 
         if (playingIndexInfo != null)
             prevSongIndex = playingIndexInfo.getPrevShuffleIndex();
@@ -658,7 +658,8 @@ public class MusicService extends Service implements
         resetToInitialState();
         deferredGo = true;
         playingIndexInfo = null;
-        onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+        if (onDeckIndexInfo != null)
+            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
     }
 
     //

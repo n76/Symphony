@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not applicable
 
 ### Changed
-- Not applicable
+- Fix crash when next pressed and there are no tracks in genre.
 
 ### Removed
 - Not applicable
