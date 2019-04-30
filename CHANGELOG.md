@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Fix crash when next pressed and there are no tracks in genre.
+- Remove APK from git repository (start using GitHub's release capability).
 
 ### Removed
 - Not applicable

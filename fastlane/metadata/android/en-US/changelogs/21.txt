@@ -1,1 +1,2 @@
 - Fix crash when next pressed and there are no tracks in genre.
+- Remove APK from git repository (start using GitHub's release capability).
