@@ -658,7 +658,7 @@ public class MusicService extends Service implements
         resetToInitialState();
         deferredGo = true;
         playingIndexInfo = null;
-        if (onDeckIndexInfo != null)
+        if ((onDeckIndexInfo != null) && (songs != null))
             onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
     }
 
@@ -668,6 +668,8 @@ public class MusicService extends Service implements
 
     // Create a new media player instance and get it started on preparing itself
     private MediaPlayer prepareTrack(int trackIndex) {
+        if (songs == null)
+            return null;
         MediaPlayer mp = initTrackPlayer();
         Song songToPlay = songs.get(trackIndex);    //get song info
         long currSong = songToPlay.getId();           //set uri
