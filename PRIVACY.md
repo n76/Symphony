@@ -11,13 +11,14 @@ The objective of this policy document is to provide an open environment between 
 Information Collection And Use
 For better and enhanced utilization of Symphony, the software is designed to request provision of certain personally identifiable information. This permission needs to be enabled for the software to work properly on the device on which the software's services are intended.
 
-The permissiona are:
+The permissions are:
 
 - Storage
 
 Some other capabilities of the software include;
 
 - Wake Lock
+- Foreground Service
 
 Information that may be collected with these permissions are stored locally on the device and the developer has no access to that information.
 

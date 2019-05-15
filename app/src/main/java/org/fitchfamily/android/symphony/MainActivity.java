@@ -497,7 +497,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     public void skipBack(View v) {
         Log.d(TAG, "skipBack() entry.");
-        playPrev();
+        if (getCurrentPosition() < 5000)
+            playPrev();
+        else {
+            seekTo(0);
+            updateControls();
+        }
     }
 
     public void skipForward(View v) {

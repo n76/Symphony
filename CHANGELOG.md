@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Not applicable
 
 ### Changed
-- Not applicable
+- Change behavior of track skip back. If more than 5 seconds into track then got back to start of current track, otherwise go to start of previous track.
 
 ### Removed
 - Not applicable
