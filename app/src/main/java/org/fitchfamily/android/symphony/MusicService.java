@@ -291,6 +291,7 @@ public class MusicService extends Service implements
                     break;
 
                 case PLAY_RANDOM_SONG:
+                    logSuffleOrder("Songs", songOrder);
                     shuffleIndex++;
                     if (shuffleIndex >= songs.size())
                         shuffleIndex = 0;
@@ -298,6 +299,7 @@ public class MusicService extends Service implements
                     break;
 
                 case PLAY_RANDOM_ALBUM:
+                    logSuffleOrder("albums", albumOrder);
                     long curentAlbum = songs.get(currentIndex).getAlbumId();
                     if (rslt >= songs.size()) {
                         rslt = 0;
@@ -324,6 +326,9 @@ public class MusicService extends Service implements
 
     private int shuffle = PLAY_RANDOM_ALBUM;
     private Random rand;
+    private Random shuffleRand;
+    private long shuffleSeed;
+    private long lastShuffleSeed;
 
     private final IBinder musicBind = new MusicBinder();
     private boolean noisyReceiverRegistered = false;
@@ -350,6 +355,9 @@ public class MusicService extends Service implements
         playingIndexInfo = null;
         onDeckIndexInfo = null;
 
+        shuffleRand = new Random();
+        shuffleSeed = shuffleRand.nextLong();
+        lastShuffleSeed = shuffleSeed;
         rand = new Random();
         am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
     }
@@ -377,6 +385,7 @@ public class MusicService extends Service implements
         songs = theSongs;
         albums = Album.getAlbumIndexes(songs);
         songOrder = genPlayOrder(songs.size());
+        shuffleSeed = lastShuffleSeed;
         albumOrder = genPlayOrder(albums.size());
         playingIndexInfo = null;
         onDeckIndexInfo = new IndexInfo();
@@ -573,6 +582,26 @@ public class MusicService extends Service implements
         return playListGenre;
     }
 
+    public synchronized long getShuffleSeed() { return lastShuffleSeed; }
+
+    public void setShuffleSeed( long seed ) {
+        shuffleSeed = seed;
+        lastShuffleSeed = seed;
+
+        if (songs != null) {
+            songOrder = genPlayOrder(songs.size());
+            shuffleSeed = seed;
+            lastShuffleSeed = seed;
+        }
+
+        // Generate new random album order
+        if (albums != null) {
+            albumOrder = genPlayOrder(albums.size());
+            shuffleSeed = seed;
+            lastShuffleSeed = seed;
+        }
+    }
+
     public synchronized Song getCurrentSong() {
         if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
             return songs.get(playingIndexInfo.getTrackIndex());    //get song info
@@ -758,6 +787,9 @@ public class MusicService extends Service implements
     private Integer[] genPlayOrder(final int size) {
         Integer[] rslt = new Integer[size];
 
+        // Set seed for shuffling
+        rand.setSeed(shuffleSeed);
+
         // create sorted card deck (each value only occurs once)
         for (int i = 0; i < size; i++)
             rslt[i] = i;
@@ -769,7 +801,24 @@ public class MusicService extends Service implements
             rslt[i] = rslt[j];
             rslt[j] = t;
         }
+
+        lastShuffleSeed = shuffleSeed;
+        shuffleSeed = shuffleRand.nextLong();
         return rslt;
+    }
+
+    private void logSuffleOrder(String name, Integer[] order) {
+
+        if (false) {
+            String logStr = name + "={";
+            for (int i = 0; i < order.length; i++) {
+                if (i != 0)
+                    logStr += ",";
+                logStr += order[i];
+            }
+            logStr += "}";
+            Log.d(TAG, logStr);
+        }
     }
 
     private MediaPlayer initTrackPlayer() {

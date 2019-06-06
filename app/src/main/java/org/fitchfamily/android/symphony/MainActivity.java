@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private static final String SAVED_SHUFFLE_MODE = "shuffleMode";
     private static final String SAVED_TRACK_INDEX = "trackIndex";
     private static final String SAVED_TRACK_POSITION = "trackPosition";
+    private static final String SAVED_TRACK_SHUFFLE_SEED = "trackShuffleSeed";
 
     private ArrayList<Genre> genres;                    // All information about all genres
     private ArrayList<Album> currentDisplayAlbums;      // Albums in currently displayed genre.
@@ -88,12 +89,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         protected int trackId;             // ID of the playing/display track
         protected int position;            // Play position of the track.
         protected int shuffle;             // Current shuffle mode
+        protected long shuffleSeed;        // Shuffle seed used.
 
         PlayInfo() {
             genreName = "";
             trackId = 0;
             position = 0;
             shuffle = MusicService.PLAY_SEQUENTIAL;
+            shuffleSeed = 0;
         }
 
         PlayInfo(PlayInfo playInfo) {
@@ -102,16 +105,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 trackId = playInfo.trackId;
                 position = playInfo.position;
                 shuffle = playInfo.shuffle;
+                shuffleSeed = playInfo.shuffleSeed;
             } else {
                 genreName = "";
                 trackId = 0;
                 position = 0;
                 shuffle = MusicService.PLAY_SEQUENTIAL;
+                shuffleSeed = 0;
             }
         }
 
         public String toString() {
-            return "{" + genreName + "," + trackId + "," + position + "," + shuffle + "}";
+            return "{" + genreName + "," + trackId + "," + position + "," + shuffle + ","+ shuffleSeed + "}";
         }
     }
 
@@ -316,6 +321,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             //get service
             musicSrv = binder.getService();
             musicSrv.setShuffle(displayInfo.shuffle);
+            musicSrv.setShuffleSeed(displayInfo.shuffleSeed);
             shuffleSpinner.setSelection(displayInfo.shuffle);
             initializeMusicServerPlaylist(playingInfo);
         }
@@ -918,6 +924,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             int trkIndex = musicSrv.getTrackIndex();
             int trackPosition = musicSrv.getPosition();
             String genreName = musicSrv.getGenre();
+            long trackSuffleSeed = musicSrv.getShuffleSeed();
 
             if (genreName != null)
                 editor.putString(SAVED_GENRE_NAME, genreName);
@@ -927,6 +934,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
             if (trackPosition > 0)
                 editor.putInt(SAVED_TRACK_POSITION, trackPosition);
+
+            if (trackSuffleSeed != 0)
+                editor.putLong(SAVED_TRACK_SHUFFLE_SEED, trackSuffleSeed);
             editor.apply();
         }
     }
@@ -941,6 +951,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         saved.shuffle = prefs.getInt(SAVED_SHUFFLE_MODE, MusicService.PLAY_SEQUENTIAL);
         saved.trackId = prefs.getInt(SAVED_TRACK_INDEX, -1);
         saved.position = prefs.getInt(SAVED_TRACK_POSITION, 0);
+        saved.shuffleSeed = prefs.getLong(SAVED_TRACK_SHUFFLE_SEED, 0);
 
         if ((saved.genreName == null) || (saved.trackId < 0))
             return null;
