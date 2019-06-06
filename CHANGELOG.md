@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Change behavior of track skip back. If more than 5 seconds into track then got back to start of current track, otherwise go to start of previous track.
 - Save and restore last shuffle order so that when app restarted and current track resumed we continue the previous play order. Avoids replaying the same track/album soon after a restart. Order is still reshuffled when changing genres, changing shuffle mode, etc.
+- Disable Proguard on release build
 
 ### Removed
 - Not applicable

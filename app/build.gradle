@@ -8,14 +8,14 @@ android {
         applicationId "org.fitchfamily.android.symphony"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 21
-        versionName "1.1.13"
+        versionCode 22
+        versionName "1.1.14"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
