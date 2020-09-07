@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private Spinner genreSpinner;
     // Viewing Albums
     private Spinner albumSpinner;
-    private AlbumSpinnerAdaptor albumAdaptor;
+    private AlbumSpinnerAdapter albumAdaptor;
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
     private boolean mUserIsSeeking = false;
@@ -550,7 +550,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 }
             });
 
-            albumAdaptor = new AlbumSpinnerAdaptor(this, currentDisplayAlbums, mImageLoader);
+            albumAdaptor = new AlbumSpinnerAdapter(this, currentDisplayAlbums, mImageLoader);
             albumSpinner.setAdapter(albumAdaptor);
             albumSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 

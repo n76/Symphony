@@ -35,17 +35,17 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 
-public class AlbumSpinnerAdaptor extends ArrayAdapter {
+public class AlbumSpinnerAdapter extends ArrayAdapter {
     // private static final String TAG = "Symphony:SpinnerAdaptor";
 
     private ArrayList<Album> mAlbums;
     private Context mContext;
     private ImageLoader mImageLoader;
-    public AlbumSpinnerAdaptor(@NonNull Context context, int resource) {
+    public AlbumSpinnerAdapter(@NonNull Context context, int resource) {
         super(context, resource);
     }
 
-    public AlbumSpinnerAdaptor(@NonNull Context context, ArrayList<Album> albums, ImageLoader loader) {
+    public AlbumSpinnerAdapter(@NonNull Context context, ArrayList<Album> albums, ImageLoader loader) {
         super(context, R.layout.album_spinner_row);
         this.mAlbums = albums;
         this.mContext = context;
