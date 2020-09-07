@@ -27,7 +27,10 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.provider.MediaStore;
 import android.util.Log;
+
+import androidx.core.content.ContextCompat;
 
 /**
  * Created by tfitch on 7/5/17.
@@ -102,7 +105,7 @@ public class Song {
         Bitmap artwork = null;
         try {
             Uri trackUri = ContentUris.withAppendedId(
-                    android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
             MediaMetadataRetriever mmr = new MediaMetadataRetriever();
             mmr.setDataSource(mContext, trackUri);
 
@@ -116,7 +119,7 @@ public class Song {
             artwork = null;
         }
         if (artwork == null) {
-            Drawable drawable = mContext.getDrawable(R.drawable.ic_launcher_icon);
+            Drawable drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_launcher_icon);
             if (drawable != null) {
                 artwork = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
                         drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);

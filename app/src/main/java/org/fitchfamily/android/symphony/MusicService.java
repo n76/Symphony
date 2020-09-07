@@ -41,6 +41,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -242,7 +243,7 @@ public class MusicService extends Service implements
     }
 
     public synchronized void setShuffle(int playMode) {
-        Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") entry.");
+        Log.d(TAG, "setShuffle(" + playMode + ") entry.");
         if (shuffle != playMode) {
             switch (playMode) {
                 case PLAY_SEQUENTIAL:
@@ -284,7 +285,7 @@ public class MusicService extends Service implements
                     break;
 
                 default:
-                    Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") Invalid value.");
+                    Log.d(TAG, "setShuffle(" + playMode + ") Invalid value.");
             }
         }
     }
@@ -533,14 +534,14 @@ public class MusicService extends Service implements
 
     // Create a new media player instance and get it started on preparing itself
     private MediaPlayer prepareTrack(int trackIndex) {
-        if ((songs == null) && (trackIndex < songs.size()))
+        if ((songs != null) && (trackIndex < songs.size()))
             return null;
         MediaPlayer mp = initTrackPlayer();
         Song songToPlay = songs.get(trackIndex);    //get song info
         long currSong = songToPlay.getId();           //set uri
 
         Uri trackUri = ContentUris.withAppendedId(
-                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
         try {
             mp.setDataSource(getApplicationContext(), trackUri);
@@ -643,15 +644,16 @@ public class MusicService extends Service implements
         return rslt;
     }
 
-    private void logSuffleOrder(String name, Integer[] order) {
+    private void logShuffleOrder(String name, Integer[] order) {
 
         if (false) {
-            String logStr = name + "={";
+            StringBuilder logStrBuilder = new StringBuilder(name + "={");
             for (int i = 0; i < order.length; i++) {
                 if (i != 0)
-                    logStr += ",";
-                logStr += order[i];
+                    logStrBuilder.append(",");
+                logStrBuilder.append(order[i]);
             }
+            String logStr = logStrBuilder.toString();
             logStr += "}";
             Log.d(TAG, logStr);
         }
@@ -894,11 +896,11 @@ public class MusicService extends Service implements
 
                 case PLAY_RANDOM_ALBUM:
                     if (currentIndex >= songs.size()) {
-                        rslt = 0;
+                        // Do nothing.
                     } else {
                         if (albumOrder != null) {
                             int currentAlbumIndex = -1;
-                            Long currentAlbumId = songs.get(currentIndex).getAlbumId();
+                            long currentAlbumId = songs.get(currentIndex).getAlbumId();
                             for (int i = 0; i < albums.size(); i++) {
                                 if (currentAlbumId == albums.get(i).getID()) {
                                     currentAlbumIndex = i;
@@ -925,7 +927,7 @@ public class MusicService extends Service implements
                     break;
 
                 case PLAY_RANDOM_SONG:
-                    logSuffleOrder("Songs", songOrder);
+                    logShuffleOrder("Songs", songOrder);
                     shuffleIndex++;
                     if (shuffleIndex >= songs.size())
                         shuffleIndex = 0;
@@ -933,14 +935,14 @@ public class MusicService extends Service implements
                     break;
 
                 case PLAY_RANDOM_ALBUM:
-                    logSuffleOrder("albums", albumOrder);
-                    long curentAlbum = songs.get(currentIndex).getAlbumId();
+                    logShuffleOrder("albums", albumOrder);
+                    long currentAlbum = songs.get(currentIndex).getAlbumId();
                     if (rslt >= songs.size()) {
                         rslt = 0;
                     }
                     long nextAlbum = songs.get(rslt).getAlbumId();
 
-                    if (curentAlbum != nextAlbum) {
+                    if (currentAlbum != nextAlbum) {
                         shuffleIndex++;
                         if (shuffleIndex >= albums.size())
                             shuffleIndex = 0;

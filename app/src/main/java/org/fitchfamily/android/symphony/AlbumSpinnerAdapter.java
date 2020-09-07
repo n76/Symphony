@@ -41,9 +41,6 @@ public class AlbumSpinnerAdapter extends ArrayAdapter {
     private ArrayList<Album> mAlbums;
     private Context mContext;
     private ImageLoader mImageLoader;
-    public AlbumSpinnerAdapter(@NonNull Context context, int resource) {
-        super(context, resource);
-    }
 
     public AlbumSpinnerAdapter(@NonNull Context context, ArrayList<Album> albums, ImageLoader loader) {
         super(context, R.layout.album_spinner_row);

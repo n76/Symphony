@@ -20,7 +20,6 @@
 package org.fitchfamily.android.symphony;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -34,6 +33,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -63,7 +63,6 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-@TargetApi(23)
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
     private static final String TAG = "Symphony:MainActivity";
     private static final int REQUEST_PERMISSION_STORAGE = 1234;
@@ -281,10 +280,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_BACK:
-                moveTaskToBack(true);
-                return true;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(true);
+            return true;
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -309,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult() entry.");
         for (int i = 0; i < permissions.length; i++) {
             int rslt = -999;
@@ -319,12 +317,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
         if (grantResults.length > 0) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                switch (requestCode) {
-                    case REQUEST_PERMISSION_STORAGE: {
-                        Log.d(TAG, "onActivityResult() EXT_STORE_REQUEST GRANTED");
-                        setupGenreList(playingInfo);
-                        initializeMusicServerPlaylist(playingInfo);
-                    }
+                if (requestCode == REQUEST_PERMISSION_STORAGE) {
+                    Log.d(TAG, "onActivityResult() EXT_STORE_REQUEST GRANTED");
+                    setupGenreList(playingInfo);
+                    initializeMusicServerPlaylist(playingInfo);
                 }
             } else {
                 Log.d(TAG, "onActivityResult() Request denied.");
@@ -524,7 +520,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             setupGenreList(playInfo);
         } else {
             Log.d(TAG, "onCreate(): Need permission to access storage.");
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_PERMISSION_STORAGE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_PERMISSION_STORAGE);
+            }
         }
     }
 
@@ -775,8 +773,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             ArrayList<Album> genreAlbums = Album.getAlbumIndexes(genrePlaylist);
 
             currentDisplayAlbums.clear();
-            if (genreAlbums != null)
-                currentDisplayAlbums.addAll(genreAlbums);
+            currentDisplayAlbums.addAll(genreAlbums);
             if (albumAdaptor != null)
                 albumAdaptor.notifyDataSetChanged();
 
@@ -984,7 +981,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     //
     // Information to save display or playing state information
     //
-    private class PlayInfo {
+    private static class PlayInfo {
         protected String genreName;        // Name of playing/display genre
         protected int trackId;             // ID of the playing/display track
         protected int position;            // Play position of the track.

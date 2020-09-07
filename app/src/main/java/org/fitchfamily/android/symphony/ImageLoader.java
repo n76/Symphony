@@ -60,6 +60,8 @@ import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
 
+import androidx.core.content.ContextCompat;
+
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -88,11 +90,11 @@ public class ImageLoader implements ComponentCallbacks2 {
         ActivityManager am = (ActivityManager) context.getSystemService(
                 Context.ACTIVITY_SERVICE);
         mContext = context;
-        mAppIcon = mContext.getDrawable(R.drawable.ic_launcher_icon);
+        mAppIcon = ContextCompat.getDrawable(mContext, R.drawable.ic_launcher_icon);
 
         /*
          *  Get the heap size for our application in MB and compute a
-         *  safe size for our image cache. Image cache sizze is in KB
+         *  safe size for our image cache. Image cache size is in KB
          */
         int maxKb;
         try {
@@ -171,7 +173,7 @@ public class ImageLoader implements ComponentCallbacks2 {
         }
     }
 
-    private class WorkItem {
+    private static class WorkItem {
         public long imageID;
         public ImageView imageView;
 
@@ -181,7 +183,7 @@ public class ImageLoader implements ComponentCallbacks2 {
         }
     }
 
-    private class ImageLruCache extends LruCache<Long, Bitmap> {
+    private static class ImageLruCache extends LruCache<Long, Bitmap> {
 
         public ImageLruCache(int maxSize) {
             super(maxSize);
