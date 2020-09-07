@@ -28,13 +28,12 @@ import java.util.ArrayList;
  */
 
 public class Album {
+    private static final String TAG = "Symphony:Album";
     private String title;
     private long id;
     private int firstTrackIndex;
     private int lastTrackIndex;
     private long mImageId;
-
-    private static final String TAG = "Symphony:Album";
 
     private Album(long albumId,
                   String albumTitle,
@@ -47,22 +46,6 @@ public class Album {
         this.mImageId = imageID;
         firstTrackIndex = startTrack;
         lastTrackIndex = endTrack;
-    }
-
-    public long getID() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public int getTrack() {
-        return firstTrackIndex;
-    }       // Index to first song/track in album
-
-    public int getLastTrackIndex() {
-        return lastTrackIndex;
     }
 
     public static ArrayList<Album> getAlbumIndexes(ArrayList<Song> songs) {
@@ -78,7 +61,7 @@ public class Album {
         for (int i = 0; i < songs.size(); i++) {
             Song s = songs.get(i);
             long nextAlbumId = s.getAlbumId();
-            if (i==0) {
+            if (i == 0) {
                 curAlbumId = nextAlbumId;
                 albumStartTrack = i;
                 albumEndTrack = i;
@@ -97,6 +80,22 @@ public class Album {
         }
         rslt.add(new Album(curAlbumId, albumTitle, imageID, albumStartTrack, albumEndTrack));
         return rslt;
+    }
+
+    public long getID() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getTrack() {
+        return firstTrackIndex;
+    }       // Index to first song/track in album
+
+    public int getLastTrackIndex() {
+        return lastTrackIndex;
     }
 
     public long getImageId() {

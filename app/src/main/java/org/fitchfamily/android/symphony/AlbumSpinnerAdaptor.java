@@ -30,25 +30,19 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import java.util.ArrayList;
 
 public class AlbumSpinnerAdaptor extends ArrayAdapter {
     // private static final String TAG = "Symphony:SpinnerAdaptor";
 
-    public AlbumSpinnerAdaptor(@NonNull Context context, int resource) {
-        super(context, resource);
-    }
-
     private ArrayList<Album> mAlbums;
     private Context mContext;
     private ImageLoader mImageLoader;
-
-    private static class ViewHolder {
-        ImageView mImage;
-        TextView mName;
+    public AlbumSpinnerAdaptor(@NonNull Context context, int resource) {
+        super(context, resource);
     }
 
     public AlbumSpinnerAdaptor(@NonNull Context context, ArrayList<Album> albums, ImageLoader loader) {
@@ -93,5 +87,10 @@ public class AlbumSpinnerAdaptor extends ArrayAdapter {
     @Override
     public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         return getView(position, convertView, parent);
+    }
+
+    private static class ViewHolder {
+        ImageView mImage;
+        TextView mName;
     }
 }

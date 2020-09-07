@@ -42,13 +42,13 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+
 import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 /**
  * Created by tfitch on 7/6/17.
@@ -105,57 +105,17 @@ public class MusicService extends Service implements
 
 
     private static final String TAG = "Symphony:MusicService";
-
+    private static final int NOTIFY_ID = 1;
+    private final IBinder musicBind = new MusicBinder();
+    // private MediaControllerCompat.TransportControls transportControls;
     //MediaSession
     private MediaSessionManager mediaSessionManager;
     private MediaSession mediaSession;
-    // private MediaControllerCompat.TransportControls transportControls;
-
     // For Audio "Focus", support pausing or reducing volume with other apps
     // wish to use audio output (alerts, etc.)
     private boolean haveAudioFocus = false;
     //private Handler mHandler = new Handler();
     private AudioManager am;
-    private AudioManager.OnAudioFocusChangeListener afChangeListener =
-            new AudioManager.OnAudioFocusChangeListener() {
-                public void onAudioFocusChange(int focusChange) {
-                    if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-                        // Permanent loss of audio focus
-                        // Pause playback immediately
-                        // mediaController.getTransportControls().pause();
-                        pausePlayer();
-                        // Wait 30 seconds before stopping playback
-/*
-                        mHandler.postDelayed((Runnable) () -> currentTrackPlayer.stop(),
-                                TimeUnit.SECONDS.toMillis(30));
-*/
-                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                        // Pause playback
-                        pausePlayer();
-                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-                        // Lower the volume, keep playing
-                        if (currentTrackPlayer != null)
-                            currentTrackPlayer.setVolume(0.25f, 0.25f);
-                    } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-                        // Your app has been granted audio focus again
-                        // Raise volume to normal, restart playback if necessary
-                        if (currentTrackPlayer != null)
-                            currentTrackPlayer.setVolume(1.0f, 1.0f);
-                    }
-                }
-            };
-
-    // Stuff to handle pausing music when earphones are unplugged
-    private class BecomingNoisyReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
-                Log.d(TAG, "BecomingNoisyReceiver.onReceive()");
-                pausePlayer();
-            }
-        }
-    }
-
     private IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
     private BecomingNoisyReceiver myNoisyAudioStreamReceiver = new BecomingNoisyReceiver();
 
@@ -182,8 +142,682 @@ public class MusicService extends Service implements
 
     private Integer[] songOrder;            // Shuffle order for songs
     private Integer[] albumOrder;           // Shuffle order for albums
+    private IndexInfo playingIndexInfo;  // Information and control of currently playing track
+    private IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
+    private int shuffle = PLAY_RANDOM_ALBUM;
+    private Random rand;
+    private Random shuffleRand;
+    private long shuffleSeed;
+    private long lastShuffleSeed;
+    private boolean noisyReceiverRegistered = false;
+    private AudioManager.OnAudioFocusChangeListener afChangeListener =
+            new AudioManager.OnAudioFocusChangeListener() {
+                public void onAudioFocusChange(int focusChange) {
+                    if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                        // Permanent loss of audio focus
+                        // Pause playback immediately
+                        // mediaController.getTransportControls().pause();
+                        pausePlayer();
+                        // Wait 30 seconds before stopping playback
+/*
+                        mHandler.postDelayed(() -> currentTrackPlayer.stop(),
+                                TimeUnit.SECONDS.toMillis(30));
+*/
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                        // Pause playback
+                        pausePlayer();
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                        // Lower the volume, keep playing
+                        if (currentTrackPlayer != null)
+                            currentTrackPlayer.setVolume(0.25f, 0.25f);
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                        // Your app has been granted audio focus again
+                        // Raise volume to normal, restart playback if necessary
+                        if (currentTrackPlayer != null)
+                            currentTrackPlayer.setVolume(1.0f, 1.0f);
+                    }
+                }
+            };
+    // Stuff to allow us to defer requested operations (like starting a track after it
+    // has been prepared or positioning the playback point.
+    private boolean deferredGo;
+    private int deferredPosition;
 
-    private class IndexInfo {           // Information shuffle and track
+    public void onCreate() {
+        super.onCreate();
+        Log.d(TAG, "onCreate() entry.");
+
+        currentTrackPlayer = null;
+        onDeckTrackPlayer = null;
+
+        deferredPosition = -1;
+        deferredGo = false;
+
+        playingIndexInfo = null;
+        onDeckIndexInfo = null;
+
+        shuffleRand = new Random();
+        shuffleSeed = shuffleRand.nextLong();
+        lastShuffleSeed = shuffleSeed;
+        rand = new Random();
+        am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "onStartCommand() entry.");
+        if (mediaSessionManager == null) {
+            initMediaSession();
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    // For "gap-less playback" we setup a second "on-deck" player ready to go. When the
+    // current player says it is finished, we start the on-deck player and release the
+    // old player.
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy() entry.");
+        resetToInitialState();
+        stopForeground(true);
+        super.onDestroy();
+    }
+
+    public void setList(ArrayList<Song> theSongs, String theGenre) {
+        Log.d(TAG, "setList() entry.");
+        resetToInitialState();
+        songs = theSongs;
+        albums = Album.getAlbumIndexes(songs);
+        songOrder = genPlayOrder(songs.size());
+        shuffleSeed = lastShuffleSeed;
+        albumOrder = genPlayOrder(albums.size());
+        playingIndexInfo = null;
+        onDeckIndexInfo = new IndexInfo();
+        playListGenre = theGenre;
+    }
+
+    public int getShuffle() {
+        return shuffle;
+    }
+
+    public synchronized void setShuffle(int playMode) {
+        Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") entry.");
+        if (shuffle != playMode) {
+            switch (playMode) {
+                case PLAY_SEQUENTIAL:
+                case PLAY_RANDOM_SONG:
+                case PLAY_RANDOM_ALBUM:
+                    // Generate new random track order
+                    if (songs != null) {
+                        songOrder = genPlayOrder(songs.size());
+                    }
+
+                    // Generate new random album order
+                    if (albums != null)
+                        albumOrder = genPlayOrder(albums.size());
+
+                    // If we have a on-deck player, cancel it as our play order is
+                    // changing.
+                    if (currentTrackPlayer != null) {
+                        currentTrackPlayer.setNextMediaPlayer(null);
+                        if (onDeckTrackPlayer != null) {
+                            onDeckTrackPlayer.release();
+                            onDeckTrackPlayer = null;
+                        }
+                    }
+
+                    // Set the new play mode and set the shuffle index to select
+                    // the current track.
+                    shuffle = playMode;
+                    if (playingIndexInfo != null) {
+                        playingIndexInfo.shuffleChanged();
+
+                        // If we are playing something, then prepare the next track
+                        // using the new play mode.
+                        if (currentTrackPlayer != null) {
+                            onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                            currentTrackPlayer.setNextMediaPlayer(null);
+                            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+                        }
+                    }
+                    break;
+
+                default:
+                    Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") Invalid value.");
+            }
+        }
+    }
+
+    public synchronized int getTrackIndex() {
+        if (playingIndexInfo != null)
+            return playingIndexInfo.getTrackIndex();
+        else
+            return -1;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return musicBind;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind() entry.");
+        resetToInitialState();
+        return false;
+    }
+
+    // Current track player notifying us that it has finished playing its track
+    //
+    // Release current track player and replace it by the "On Deck" player.
+    // If the on deck player is ready, start it and then setup a new on deck.
+    //
+    @Override
+    public synchronized void onCompletion(MediaPlayer mp) {
+        Log.d(TAG, "onCompletion() entry.");
+        if ((currentTrackPlayer != null) && (currentTrackPlayer.getCurrentPosition() > 0)) {
+            currentTrackPlayer.reset();
+            currentTrackPlayer.release();
+            currentTrackPlayer = onDeckTrackPlayer;
+            onDeckTrackPlayer = null;
+            if (currentTrackPlayer != null) {
+                Log.d(TAG, "onCompletion() next track prepared, starting immediately.");
+                playingIndexInfo = onDeckIndexInfo;
+                tellTheWorld(SERVICE_NOW_PLAYING);
+
+                // Setup an "on Deck" player for the next track to play
+                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+            }
+        }
+    }
+
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        Log.d(TAG, "onError(what=" + what + ", extra=" + extra + ") entry.");
+        resetToInitialState();
+        return false;
+    }
+
+    @Override
+    public synchronized void onPrepared(MediaPlayer mp) {
+        Log.d(TAG, "onPrepared() entry.");
+        // Register a receiver to be notified about headphones being
+        // unplugged then start playback
+        if (currentTrackPlayer == mp) {
+            Log.d(TAG, "onPrepared() Unexpected event on currentTrackPlayer");
+        } else if (onDeckTrackPlayer == mp) {
+            if (currentTrackPlayer == null) {
+                //
+                // No currently playing track. Set the on deck track to currently playing
+                //
+                currentTrackPlayer = onDeckTrackPlayer;
+                playingIndexInfo = onDeckIndexInfo;
+                onDeckTrackPlayer = null;
+
+                if (deferredPosition > 0)
+                    currentTrackPlayer.seekTo(deferredPosition);
+                deferredPosition = -1;
+
+                if (deferredGo)
+                    this.go();
+                else
+                    tellTheWorld(SERVICE_PAUSED);
+
+                // Setup an "on Deck" player for the next track to play
+                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
+                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+            } else {
+                // We are currently playing a track. Set the on deck track to play when
+                // current track is done.
+                currentTrackPlayer.setNextMediaPlayer(onDeckTrackPlayer);
+            }
+        }
+    }
+
+    public synchronized void playTrack(int trackIndex) {
+        Log.d(TAG, "playTrack(" + trackIndex + ") entry.");
+        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
+            setTrack(trackIndex);
+            deferredGo = true;
+        } else {
+            Log.d(TAG, "playTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
+        }
+    }
+
+    public synchronized void setTrack(int trackIndex) {
+        Log.d(TAG, "setTrack(" + trackIndex + ") entry.");
+        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
+            resetToInitialState();
+            deferredGo = false;
+            playingIndexInfo = null;
+            onDeckIndexInfo = new IndexInfo(trackIndex);
+            onDeckTrackPlayer = prepareTrack(trackIndex);
+        } else {
+            Log.d(TAG, "setTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
+        }
+    }
+
+    // Items needed to support media controller calls from main activity.
+    public synchronized int getPosition() {
+        //Log.d(TAG,"getPosition() entry.");
+        if (currentTrackPlayer != null)
+            return currentTrackPlayer.getCurrentPosition();
+        Log.d(TAG, "getPosition() not playing?");
+        return 0;
+    }
+
+    public synchronized int getDuration() {
+        //Log.d(TAG,"getDuration() entry.");
+        if (currentTrackPlayer != null)
+            return currentTrackPlayer.getDuration();
+        Log.d(TAG, "getDuration() not playing?");
+        return 0;
+    }
+
+    public synchronized String getGenre() {
+        return playListGenre;
+    }
+
+    public synchronized long getShuffleSeed() {
+        return lastShuffleSeed;
+    }
+
+    public void setShuffleSeed(long seed) {
+        shuffleSeed = seed;
+        lastShuffleSeed = seed;
+
+        if (songs != null) {
+            songOrder = genPlayOrder(songs.size());
+            shuffleSeed = seed;
+            lastShuffleSeed = seed;
+        }
+
+        // Generate new random album order
+        if (albums != null) {
+            albumOrder = genPlayOrder(albums.size());
+            shuffleSeed = seed;
+            lastShuffleSeed = seed;
+        }
+    }
+
+    public synchronized Song getCurrentSong() {
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            return songs.get(playingIndexInfo.getTrackIndex());    //get song info
+        }
+        return null;
+    }
+
+    public synchronized boolean isPlaying() {
+        return (currentTrackPlayer != null) && currentTrackPlayer.isPlaying();
+    }
+
+    public synchronized boolean hasTrack() {
+        return (currentTrackPlayer != null);
+    }
+
+    public synchronized void pausePlayer() {
+        Log.d(TAG, "pausePlayer() entry.");
+        if (currentTrackPlayer != null) {
+            currentTrackPlayer.pause();
+            tellTheWorld(SERVICE_PAUSED);
+        }
+        try {
+            if (noisyReceiverRegistered)
+                unregisterReceiver(myNoisyAudioStreamReceiver);
+            noisyReceiverRegistered = false;
+        } catch (Exception e) {
+            Log.e("MUSIC SERVICE", "Error unregistering noisy audio receiver.", e);
+        }
+
+        if (haveAudioFocus) {
+            am.abandonAudioFocus(afChangeListener);
+            haveAudioFocus = false;
+        }
+        stopForeground(true);
+    }
+
+    public synchronized void seek(int posn) {
+        Log.d(TAG, "seek(" + posn + ") entry.");
+        if (currentTrackPlayer != null)
+            currentTrackPlayer.seekTo(posn);
+        else {
+            deferredPosition = posn;
+            Log.d(TAG, "seek() deferredPosition set to " + posn);
+        }
+    }
+
+    public synchronized void go() {
+        Log.d(TAG, "go() entry.");
+        if (currentTrackPlayer != null) {
+            deferredGo = false;
+            if (!haveAudioFocus) {
+                int result = am.requestAudioFocus(afChangeListener,
+                        // Use the music stream.
+                        AudioManager.STREAM_MUSIC,
+                        // Request permanent focus.
+                        AudioManager.AUDIOFOCUS_GAIN);
+                haveAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+            }
+            if (haveAudioFocus) {
+                registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
+                noisyReceiverRegistered = true;
+                currentTrackPlayer.start();
+                tellTheWorld(SERVICE_NOW_PLAYING);
+            }
+        } else
+            deferredGo = true;
+    }
+
+    public synchronized void playPrev() {
+        Log.d(TAG, "playPrev() entry.");
+        int prevSongIndex = -1;
+
+        if (playingIndexInfo != null)
+            prevSongIndex = playingIndexInfo.getPrevShuffleIndex();
+        if (prevSongIndex >= 0) {
+            playTrack(prevSongIndex);
+        }
+    }
+
+    //skip to next
+    public synchronized void playNext() {
+        Log.d(TAG, "playNext() entry.");
+        resetToInitialState();
+        deferredGo = true;
+        playingIndexInfo = null;
+        if ((onDeckIndexInfo != null) && (songs != null) && (!songs.isEmpty()))
+            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
+    }
+
+    // Create a new media player instance and get it started on preparing itself
+    private MediaPlayer prepareTrack(int trackIndex) {
+        if ((songs == null) && (trackIndex < songs.size()))
+            return null;
+        MediaPlayer mp = initTrackPlayer();
+        Song songToPlay = songs.get(trackIndex);    //get song info
+        long currSong = songToPlay.getId();           //set uri
+
+        Uri trackUri = ContentUris.withAppendedId(
+                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                currSong);
+        try {
+            mp.setDataSource(getApplicationContext(), trackUri);
+        } catch (Exception e) {
+            Log.e("MUSIC SERVICE", "Error setting data source", e);
+            mp.release();
+            return null;
+        }
+        mp.prepareAsync();
+        return mp;
+    }
+
+    private void setupForegroundNotification() {
+        String NOTIFICATION_CHANNEL_ID = "org.fitchfamily.android.symphony";
+
+        // Let the Music Controller know we are playing the song.
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendInt = PendingIntent.getActivity(this, 0,
+                notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentIntent(pendInt)
+                .setSmallIcon(R.drawable.ic_notification_icon)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
+
+            String trackTitle = songToPlay.getTitle();            //set title
+            String trackAlbum = songToPlay.getAlbum();
+
+            builder.setTicker(trackTitle)
+                    .setContentTitle(songToPlay.getArtist())
+                    .setContentText(trackTitle);
+            if (trackTitle.compareTo(trackAlbum) != 0)
+                builder.setSubText(trackAlbum);
+        }
+        Notification notify = builder.build();
+        startForeground(NOTIFY_ID, notify);
+    }
+
+    private void tellTheWorld(String status) {
+        boolean isPlaying = SERVICE_NOW_PLAYING.equals(status);
+        Log.d(TAG, "tellTheWorld(" + status + ") isPlaying=" + isPlaying);
+
+        notifyMainActivity(status);
+        setMediaSessionState(isPlaying);
+        if (isPlaying) {
+            setupForegroundNotification();
+            updateMetaData();
+        }
+    }
+
+    private void notifyMainActivity(String status) {
+        Log.d(TAG, "notifyMainActivity(" + status + ") entry.");
+        // Let the Main Activity know we are playing the song.
+        Intent playingIntent = new Intent(status);
+        int trackIndex = 0;
+        if (playingIndexInfo != null)
+            trackIndex = playingIndexInfo.getTrackIndex();
+        playingIntent.putExtra("songIndex", trackIndex);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(playingIntent);
+    }
+
+    private Integer[] genPlayOrder(final int size) {
+        Integer[] rslt = new Integer[size];
+
+        // Set seed for shuffling
+        rand.setSeed(shuffleSeed);
+
+        // create sorted card deck (each value only occurs once)
+        for (int i = 0; i < size; i++)
+            rslt[i] = i;
+
+        // shuffle the card deck using Durstenfeld algorithm
+        for (int i = size - 1; i > 0; i--) {
+            int j = rand.nextInt(i);
+            int t = rslt[i];
+            rslt[i] = rslt[j];
+            rslt[j] = t;
+        }
+
+        lastShuffleSeed = shuffleSeed;
+        shuffleSeed = shuffleRand.nextLong();
+        return rslt;
+    }
+
+    private void logSuffleOrder(String name, Integer[] order) {
+
+        if (false) {
+            String logStr = name + "={";
+            for (int i = 0; i < order.length; i++) {
+                if (i != 0)
+                    logStr += ",";
+                logStr += order[i];
+            }
+            logStr += "}";
+            Log.d(TAG, logStr);
+        }
+    }
+
+    private MediaPlayer initTrackPlayer() {
+        Log.d(TAG, "initTrackPlayer() entry.");
+
+        MediaPlayer newTrackPlayer = new MediaPlayer();
+        //set currentTrackPlayer properties
+        newTrackPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+        newTrackPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        newTrackPlayer.setOnPreparedListener(this);
+        newTrackPlayer.setOnCompletionListener(this);
+        newTrackPlayer.setOnErrorListener(this);
+        return newTrackPlayer;
+    }
+
+    private synchronized void resetToInitialState() {
+        if (currentTrackPlayer != null) {
+            currentTrackPlayer.release();
+            currentTrackPlayer = null;
+        }
+        if (onDeckTrackPlayer != null) {
+            onDeckTrackPlayer.release();
+            onDeckTrackPlayer = null;
+        }
+        try {
+            if (noisyReceiverRegistered)
+                unregisterReceiver(myNoisyAudioStreamReceiver);
+            noisyReceiverRegistered = false;
+        } catch (Exception e) {
+            Log.e("MUSIC SERVICE", "Error unregistering noisy audio receiver.", e);
+        }
+        if (haveAudioFocus) {
+            am.abandonAudioFocus(afChangeListener);
+            haveAudioFocus = false;
+        }
+    }
+
+    private void initMediaSession() {
+        Log.d(TAG, "initMediaSession() entry.");
+        if (mediaSessionManager != null)
+            return; //mediaSessionManager exists
+
+        mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
+        // Create a new MediaSession
+        mediaSession = new MediaSession(getApplicationContext(), "SymphonyAudioPlayer");
+        //Get MediaSessions transport controls
+        // transportControls = mediaSession.getController().getTransportControls();
+        //set MediaSession -> ready to receive media commands
+        mediaSession.setActive(true);
+        //indicate that the MediaSession handles transport control commands
+        // through its MediaSessionCompat.Callback.
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+
+        //Set mediaSession's MetaData
+        updateMetaData();
+
+        // Attach Callback to receive MediaSession updates
+        mediaSession.setCallback(new MediaSession.Callback() {
+            // Implement callbacks
+            @Override
+            public void onPlay() {
+                super.onPlay();
+                go();
+            }
+
+            @Override
+            public void onPause() {
+                super.onPause();
+                pausePlayer();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+                playNext();
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                super.onSkipToPrevious();
+                playPrev();
+            }
+
+            @Override
+            public void onStop() {
+                super.onStop();
+                //Stop the service
+                stopSelf();
+            }
+
+            @Override
+            public void onSeekTo(long position) {
+                super.onSeekTo(position);
+            }
+        });
+
+        PlaybackState state = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY)
+                .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                .build();
+        mediaSession.setPlaybackState(state);
+
+        mediaSession.setActive(true);
+    }
+
+    private void setMediaSessionState(boolean isPlaying) {
+        Log.d(TAG, "setMediaSessionState(" + isPlaying + ") entry.");
+        if (isPlaying) {
+            PlaybackState state = new PlaybackState.Builder()
+                    .setActions(PlaybackState.ACTION_PAUSE |
+                            PlaybackState.ACTION_SKIP_TO_NEXT |
+                            PlaybackState.ACTION_SKIP_TO_PREVIOUS)
+                    .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                    .build();
+            mediaSession.setPlaybackState(state);
+        } else {
+            PlaybackState state = new PlaybackState.Builder()
+                    .setActions(PlaybackState.ACTION_PLAY)
+                    .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
+                    .build();
+            mediaSession.setPlaybackState(state);
+        }
+    }
+
+    private void updateMetaData() {
+        Log.d(TAG, "updateMetaData() entry.");
+        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
+            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
+
+            String trackTitle = songToPlay.getTitle();            //set title
+            String trackAlbum = songToPlay.getAlbum();
+            String trackArtist = songToPlay.getArtist();
+            Bitmap trackArtwork = songToPlay.getArtwork(getApplicationContext());
+
+            // Update the current metadata
+            mediaSession.setMetadata(new MediaMetadata.Builder()
+                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, trackArtwork)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, trackArtist)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, trackAlbum)
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, trackTitle)
+                    .build());
+
+            Log.d(TAG, "updateMetaData() trackAlbum=" + trackAlbum);
+            Log.d(TAG, "updateMetaData() trackTitle=" + trackTitle);
+            Log.d(TAG, "updateMetaData() trackArtist=" + trackArtist);
+        }
+    }
+
+    // Media Session stuff
+
+    // Stuff to handle pausing music when earphones are unplugged
+    private class BecomingNoisyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
+                Log.d(TAG, "BecomingNoisyReceiver.onReceive()");
+                pausePlayer();
+            }
+        }
+    }
+
+    private class IndexInfo {
+        // Information shuffle and track
         private int trackIndex;
         private int shuffleIndex;
 
@@ -319,653 +953,10 @@ public class MusicService extends Service implements
         }
     }
 
-    private IndexInfo playingIndexInfo;  // Information and control of currently playing track
-    private IndexInfo onDeckIndexInfo;   // Information and control of next track to be played
-
-    private static final int NOTIFY_ID = 1;
-
-    private int shuffle = PLAY_RANDOM_ALBUM;
-    private Random rand;
-    private Random shuffleRand;
-    private long shuffleSeed;
-    private long lastShuffleSeed;
-
-    private final IBinder musicBind = new MusicBinder();
-    private boolean noisyReceiverRegistered = false;
-
-    // Stuff to allow us to defer requested operations (like starting a track after it
-    // has been prepared or positioning the playback point.
-    private boolean deferredGo;
-    private int deferredPosition;
-
-    // For "gap-less playback" we setup a second "on-deck" player ready to go. When the
-    // current player says it is finished, we start the on-deck player and release the
-    // old player.
-
-    public void onCreate() {
-        super.onCreate();
-        Log.d(TAG, "onCreate() entry.");
-
-        currentTrackPlayer = null;
-        onDeckTrackPlayer = null;
-
-        deferredPosition = -1;
-        deferredGo = false;
-
-        playingIndexInfo = null;
-        onDeckIndexInfo = null;
-
-        shuffleRand = new Random();
-        shuffleSeed = shuffleRand.nextLong();
-        lastShuffleSeed = shuffleSeed;
-        rand = new Random();
-        am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand() entry.");
-        if (mediaSessionManager == null) {
-            initMediaSession();
-        }
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
-    public void onDestroy() {
-        Log.d(TAG, "onDestroy() entry.");
-        resetToInitialState();
-        stopForeground(true);
-        super.onDestroy();
-    }
-
-    public void setList(ArrayList<Song> theSongs, String theGenre) {
-        Log.d(TAG, "setList() entry.");
-        resetToInitialState();
-        songs = theSongs;
-        albums = Album.getAlbumIndexes(songs);
-        songOrder = genPlayOrder(songs.size());
-        shuffleSeed = lastShuffleSeed;
-        albumOrder = genPlayOrder(albums.size());
-        playingIndexInfo = null;
-        onDeckIndexInfo = new IndexInfo();
-        playListGenre = theGenre;
-    }
-
-    public synchronized void setShuffle(int playMode) {
-        Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") entry.");
-        if (shuffle != playMode) {
-            switch (playMode) {
-                case PLAY_SEQUENTIAL:
-                case PLAY_RANDOM_SONG:
-                case PLAY_RANDOM_ALBUM:
-                    // Generate new random track order
-                    if (songs != null) {
-                        songOrder = genPlayOrder(songs.size());
-                    }
-
-                    // Generate new random album order
-                    if (albums != null)
-                        albumOrder = genPlayOrder(albums.size());
-
-                    // If we have a on-deck player, cancel it as our play order is
-                    // changing.
-                    if (currentTrackPlayer != null) {
-                        currentTrackPlayer.setNextMediaPlayer(null);
-                        if (onDeckTrackPlayer != null) {
-                            onDeckTrackPlayer.release();
-                            onDeckTrackPlayer = null;
-                        }
-                    }
-
-                    // Set the new play mode and set the shuffle index to select
-                    // the current track.
-                    shuffle = playMode;
-                    if (playingIndexInfo != null) {
-                        playingIndexInfo.shuffleChanged();
-
-                        // If we are playing something, then prepare the next track
-                        // using the new play mode.
-                        if (currentTrackPlayer != null) {
-                            onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                            currentTrackPlayer.setNextMediaPlayer(null);
-                            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
-                        }
-                    }
-                    break;
-
-                default:
-                    Log.d(TAG, "setShuffle(" + Integer.toString(playMode) + ") Invalid value.");
-            }
-        }
-    }
-
-    public int getShuffle() {
-        return shuffle;
-    }
-
-    public synchronized int getTrackIndex() {
-        if (playingIndexInfo != null)
-            return playingIndexInfo.getTrackIndex();
-        else
-            return -1;
-    }
-
     public class MusicBinder extends Binder {
         MusicService getService() {
             Log.d(TAG, "MusicBinder.getService() entry.");
             return MusicService.this;
-        }
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return musicBind;
-    }
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        Log.d(TAG, "onUnbind() entry.");
-        resetToInitialState();
-        return false;
-    }
-
-    // Current track player notifying us that it has finished playing its track
-    //
-    // Release current track player and replace it by the "On Deck" player.
-    // If the on deck player is ready, start it and then setup a new on deck.
-    //
-    @Override
-    public synchronized void onCompletion(MediaPlayer mp) {
-        Log.d(TAG, "onCompletion() entry.");
-        if ((currentTrackPlayer != null) && (currentTrackPlayer.getCurrentPosition() > 0)) {
-            currentTrackPlayer.reset();
-            currentTrackPlayer.release();
-            currentTrackPlayer = onDeckTrackPlayer;
-            onDeckTrackPlayer = null;
-            if (currentTrackPlayer != null) {
-                Log.d(TAG, "onCompletion() next track prepared, starting immediately.");
-                playingIndexInfo = onDeckIndexInfo;
-                tellTheWorld(SERVICE_NOW_PLAYING);
-
-                // Setup an "on Deck" player for the next track to play
-                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
-            }
-        }
-    }
-
-    @Override
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-        Log.d(TAG, "onError(what=" + what + ", extra=" + extra + ") entry.");
-        resetToInitialState();
-        return false;
-    }
-
-    @Override
-    public synchronized void onPrepared(MediaPlayer mp) {
-        Log.d(TAG, "onPrepared() entry.");
-        // Register a receiver to be notified about headphones being
-        // unplugged then start playback
-        if (currentTrackPlayer == mp) {
-            Log.d(TAG, "onPrepared() Unexpected event on currentTrackPlayer");
-        } else if (onDeckTrackPlayer == mp) {
-            if (currentTrackPlayer == null) {
-                //
-                // No currently playing track. Set the on deck track to currently playing
-                //
-                currentTrackPlayer = onDeckTrackPlayer;
-                playingIndexInfo = onDeckIndexInfo;
-                onDeckTrackPlayer = null;
-
-                if (deferredPosition > 0)
-                    currentTrackPlayer.seekTo(deferredPosition);
-                deferredPosition = -1;
-
-                if (deferredGo)
-                    this.go();
-                else
-                    tellTheWorld(SERVICE_PAUSED);
-
-                // Setup an "on Deck" player for the next track to play
-                onDeckIndexInfo = new IndexInfo(playingIndexInfo);
-                onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
-            } else {
-                // We are currently playing a track. Set the on deck track to play when
-                // current track is done.
-                currentTrackPlayer.setNextMediaPlayer(onDeckTrackPlayer);
-            }
-        }
-    }
-
-    public synchronized void playTrack(int trackIndex) {
-        Log.d(TAG, "playTrack(" + trackIndex + ") entry.");
-        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
-            setTrack(trackIndex);
-            deferredGo = true;
-        } else {
-            Log.d(TAG, "playTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
-        }
-    }
-
-    public synchronized void setTrack(int trackIndex) {
-        Log.d(TAG, "setTrack(" + trackIndex + ") entry.");
-        if ((trackIndex >= 0) && (trackIndex < songs.size())) {
-            resetToInitialState();
-            deferredGo = false;
-            playingIndexInfo = null;
-            onDeckIndexInfo = new IndexInfo(trackIndex);
-            onDeckTrackPlayer = prepareTrack(trackIndex);
-        } else {
-            Log.d(TAG, "setTrack(" + trackIndex + ") index out of bounds, max=" + songs.size());
-        }
-    }
-
-    // Items needed to support media controller calls from main activity.
-    public synchronized int getPosition() {
-        //Log.d(TAG,"getPosition() entry.");
-        if (currentTrackPlayer != null)
-            return currentTrackPlayer.getCurrentPosition();
-        Log.d(TAG, "getPosition() not playing?");
-        return 0;
-    }
-
-    public synchronized int getDuration() {
-        //Log.d(TAG,"getDuration() entry.");
-        if (currentTrackPlayer != null)
-            return currentTrackPlayer.getDuration();
-        Log.d(TAG, "getDuration() not playing?");
-        return 0;
-    }
-
-    public synchronized String getGenre() {
-        return playListGenre;
-    }
-
-    public synchronized long getShuffleSeed() { return lastShuffleSeed; }
-
-    public void setShuffleSeed( long seed ) {
-        shuffleSeed = seed;
-        lastShuffleSeed = seed;
-
-        if (songs != null) {
-            songOrder = genPlayOrder(songs.size());
-            shuffleSeed = seed;
-            lastShuffleSeed = seed;
-        }
-
-        // Generate new random album order
-        if (albums != null) {
-            albumOrder = genPlayOrder(albums.size());
-            shuffleSeed = seed;
-            lastShuffleSeed = seed;
-        }
-    }
-
-    public synchronized Song getCurrentSong() {
-        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
-            return songs.get(playingIndexInfo.getTrackIndex());    //get song info
-        }
-        return null;
-    }
-
-    public synchronized boolean isPlaying() {
-        return (currentTrackPlayer != null) && currentTrackPlayer.isPlaying();
-    }
-
-    public synchronized boolean hasTrack() {
-        return (currentTrackPlayer != null);
-    }
-
-    public synchronized void pausePlayer() {
-        Log.d(TAG, "pausePlayer() entry.");
-        if (currentTrackPlayer != null) {
-            currentTrackPlayer.pause();
-            tellTheWorld(SERVICE_PAUSED);
-        }
-        try {
-            if (noisyReceiverRegistered)
-                unregisterReceiver(myNoisyAudioStreamReceiver);
-            noisyReceiverRegistered = false;
-        } catch (Exception e) {
-            Log.e("MUSIC SERVICE", "Error unregistering noisy audio receiver.", e);
-        }
-
-        if (haveAudioFocus) {
-            am.abandonAudioFocus(afChangeListener);
-            haveAudioFocus = false;
-        }
-        stopForeground(true);
-    }
-
-    public synchronized void seek(int posn) {
-        Log.d(TAG, "seek(" + posn + ") entry.");
-        if (currentTrackPlayer != null)
-            currentTrackPlayer.seekTo(posn);
-        else {
-            deferredPosition = posn;
-            Log.d(TAG, "seek() deferredPosition set to " + posn);
-        }
-    }
-
-    public synchronized void go() {
-        Log.d(TAG, "go() entry.");
-        if (currentTrackPlayer != null) {
-            deferredGo = false;
-            if (!haveAudioFocus) {
-                int result = am.requestAudioFocus(afChangeListener,
-                        // Use the music stream.
-                        AudioManager.STREAM_MUSIC,
-                        // Request permanent focus.
-                        AudioManager.AUDIOFOCUS_GAIN);
-                haveAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-            }
-            if (haveAudioFocus) {
-                registerReceiver(myNoisyAudioStreamReceiver, intentFilter);
-                noisyReceiverRegistered = true;
-                currentTrackPlayer.start();
-                tellTheWorld(SERVICE_NOW_PLAYING);
-            }
-        } else
-            deferredGo = true;
-    }
-
-    public synchronized void playPrev() {
-        Log.d(TAG, "playPrev() entry.");
-        int prevSongIndex = -1;
-
-        if (playingIndexInfo != null)
-            prevSongIndex = playingIndexInfo.getPrevShuffleIndex();
-        if (prevSongIndex >= 0) {
-            playTrack(prevSongIndex);
-        }
-    }
-
-    //skip to next
-    public synchronized void playNext() {
-        Log.d(TAG, "playNext() entry.");
-        resetToInitialState();
-        deferredGo = true;
-        playingIndexInfo = null;
-        if ((onDeckIndexInfo != null) && (songs != null) && (!songs.isEmpty()))
-            onDeckTrackPlayer = prepareTrack(onDeckIndexInfo.getTrackIndex());
-    }
-
-    //
-    // Some internal utility methods
-    //
-
-    // Create a new media player instance and get it started on preparing itself
-    private MediaPlayer prepareTrack(int trackIndex) {
-        if ((songs == null) && (trackIndex < songs.size()))
-            return null;
-        MediaPlayer mp = initTrackPlayer();
-        Song songToPlay = songs.get(trackIndex);    //get song info
-        long currSong = songToPlay.getId();           //set uri
-
-        Uri trackUri = ContentUris.withAppendedId(
-                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                currSong);
-        try {
-            mp.setDataSource(getApplicationContext(), trackUri);
-        } catch (Exception e) {
-            Log.e("MUSIC SERVICE", "Error setting data source", e);
-            mp.release();
-            return null;
-        }
-        mp.prepareAsync();
-        return mp;
-    }
-
-    private void setupForegroundNotification() {
-        String NOTIFICATION_CHANNEL_ID = "org.fitchfamily.android.symphony";
-
-        // Let the Music Controller know we are playing the song.
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendInt = PendingIntent.getActivity(this, 0,
-                notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_description);
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-            
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentIntent(pendInt)
-                .setSmallIcon(R.drawable.ic_notification_icon)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
-            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
-
-            String trackTitle = songToPlay.getTitle();            //set title
-            String trackAlbum = songToPlay.getAlbum();
-
-            builder.setTicker(trackTitle)
-                    .setContentTitle(songToPlay.getArtist())
-                    .setContentText(trackTitle);
-            if (trackTitle.compareTo(trackAlbum) != 0)
-                builder.setSubText(trackAlbum);
-        }
-        Notification notify = builder.build();
-        startForeground(NOTIFY_ID, notify);
-    }
-
-    private void tellTheWorld(String status) {
-        boolean isPlaying = SERVICE_NOW_PLAYING.equals(status);
-        Log.d(TAG, "tellTheWorld(" + status + ") isPlaying=" + isPlaying);
-
-        notifyMainActivity(status);
-        setMediaSessionState(isPlaying);
-        if (isPlaying) {
-            setupForegroundNotification();
-            updateMetaData();
-        }
-    }
-
-    private void notifyMainActivity(String status) {
-        Log.d(TAG, "notifyMainActivity(" + status + ") entry.");
-        // Let the Main Activity know we are playing the song.
-        Intent playingIntent = new Intent(status);
-        int trackIndex = 0;
-        if (playingIndexInfo != null)
-            trackIndex = playingIndexInfo.getTrackIndex();
-        playingIntent.putExtra("songIndex", trackIndex);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(playingIntent);
-    }
-
-    private Integer[] genPlayOrder(final int size) {
-        Integer[] rslt = new Integer[size];
-
-        // Set seed for shuffling
-        rand.setSeed(shuffleSeed);
-
-        // create sorted card deck (each value only occurs once)
-        for (int i = 0; i < size; i++)
-            rslt[i] = i;
-
-        // shuffle the card deck using Durstenfeld algorithm
-        for (int i = size - 1; i > 0; i--) {
-            int j = rand.nextInt(i);
-            int t = rslt[i];
-            rslt[i] = rslt[j];
-            rslt[j] = t;
-        }
-
-        lastShuffleSeed = shuffleSeed;
-        shuffleSeed = shuffleRand.nextLong();
-        return rslt;
-    }
-
-    private void logSuffleOrder(String name, Integer[] order) {
-
-        if (false) {
-            String logStr = name + "={";
-            for (int i = 0; i < order.length; i++) {
-                if (i != 0)
-                    logStr += ",";
-                logStr += order[i];
-            }
-            logStr += "}";
-            Log.d(TAG, logStr);
-        }
-    }
-
-    private MediaPlayer initTrackPlayer() {
-        Log.d(TAG, "initTrackPlayer() entry.");
-
-        MediaPlayer newTrackPlayer = new MediaPlayer();
-        //set currentTrackPlayer properties
-        newTrackPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-        newTrackPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        newTrackPlayer.setOnPreparedListener(this);
-        newTrackPlayer.setOnCompletionListener(this);
-        newTrackPlayer.setOnErrorListener(this);
-        return newTrackPlayer;
-    }
-
-    private synchronized void resetToInitialState() {
-        if (currentTrackPlayer != null) {
-            currentTrackPlayer.release();
-            currentTrackPlayer = null;
-        }
-        if (onDeckTrackPlayer != null) {
-            onDeckTrackPlayer.release();
-            onDeckTrackPlayer = null;
-        }
-        try {
-            if (noisyReceiverRegistered)
-                unregisterReceiver(myNoisyAudioStreamReceiver);
-            noisyReceiverRegistered = false;
-        } catch (Exception e) {
-            Log.e("MUSIC SERVICE", "Error unregistering noisy audio receiver.", e);
-        }
-        if (haveAudioFocus) {
-            am.abandonAudioFocus(afChangeListener);
-            haveAudioFocus = false;
-        }
-    }
-
-    // Media Session stuff
-
-    private void initMediaSession() {
-        Log.d(TAG, "initMediaSession() entry.");
-        if (mediaSessionManager != null)
-            return; //mediaSessionManager exists
-
-        mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
-        // Create a new MediaSession
-        mediaSession = new MediaSession(getApplicationContext(), "SymphonyAudioPlayer");
-        //Get MediaSessions transport controls
-        // transportControls = mediaSession.getController().getTransportControls();
-        //set MediaSession -> ready to receive media commands
-        mediaSession.setActive(true);
-        //indicate that the MediaSession handles transport control commands
-        // through its MediaSessionCompat.Callback.
-        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-
-        //Set mediaSession's MetaData
-        updateMetaData();
-
-        // Attach Callback to receive MediaSession updates
-        mediaSession.setCallback(new MediaSession.Callback() {
-            // Implement callbacks
-            @Override
-            public void onPlay() {
-                super.onPlay();
-                go();
-            }
-
-            @Override
-            public void onPause() {
-                super.onPause();
-                pausePlayer();
-            }
-
-            @Override
-            public void onSkipToNext() {
-                super.onSkipToNext();
-                playNext();
-            }
-
-            @Override
-            public void onSkipToPrevious() {
-                super.onSkipToPrevious();
-                playPrev();
-            }
-
-            @Override
-            public void onStop() {
-                super.onStop();
-                //Stop the service
-                stopSelf();
-            }
-
-            @Override
-            public void onSeekTo(long position) {
-                super.onSeekTo(position);
-            }
-        });
-
-        PlaybackState state = new PlaybackState.Builder()
-                .setActions(PlaybackState.ACTION_PLAY)
-                .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
-                .build();
-        mediaSession.setPlaybackState(state);
-
-        mediaSession.setActive(true);
-    }
-
-    private void setMediaSessionState(boolean isPlaying) {
-        Log.d(TAG, "setMediaSessionState(" + isPlaying + ") entry.");
-        if (isPlaying) {
-            PlaybackState state = new PlaybackState.Builder()
-                    .setActions(PlaybackState.ACTION_PAUSE |
-                            PlaybackState.ACTION_SKIP_TO_NEXT |
-                            PlaybackState.ACTION_SKIP_TO_PREVIOUS)
-                    .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
-                    .build();
-            mediaSession.setPlaybackState(state);
-        } else {
-            PlaybackState state = new PlaybackState.Builder()
-                    .setActions(PlaybackState.ACTION_PLAY)
-                    .setState(PlaybackState.STATE_STOPPED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1)
-                    .build();
-            mediaSession.setPlaybackState(state);
-        }
-    }
-
-    private void updateMetaData() {
-        Log.d(TAG, "updateMetaData() entry.");
-        if ((currentTrackPlayer != null) && (playingIndexInfo != null)) {
-            Song songToPlay = songs.get(playingIndexInfo.getTrackIndex());    //get song info
-
-            String trackTitle = songToPlay.getTitle();            //set title
-            String trackAlbum = songToPlay.getAlbum();
-            String trackArtist = songToPlay.getArtist();
-            Bitmap trackArtwork = songToPlay.getArtwork(getApplicationContext());
-
-            // Update the current metadata
-            mediaSession.setMetadata(new MediaMetadata.Builder()
-                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, trackArtwork)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, trackArtist)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, trackAlbum)
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, trackTitle)
-                    .build());
-
-            Log.d(TAG, "updateMetaData() trackAlbum=" + trackAlbum);
-            Log.d(TAG, "updateMetaData() trackTitle=" + trackTitle);
-            Log.d(TAG, "updateMetaData() trackArtist=" + trackArtist);
         }
     }
 }

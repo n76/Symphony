@@ -82,31 +82,7 @@ public class ImageLoader implements ComponentCallbacks2 {
      * of async tasks.
      */
     private int mAsyncTaskCount;
-
-    private class WorkItem {
-        public long imageID;
-        public ImageView imageView;
-
-        WorkItem(long id, ImageView view) {
-            imageID = id;
-            imageView = view;
-        }
-    }
-
     private Queue<WorkItem> deferredQueue = new ConcurrentLinkedQueue<>();
-
-
-    private class ImageLruCache extends LruCache<Long, Bitmap> {
-
-        public ImageLruCache(int maxSize) {
-            super(maxSize);
-        }
-
-        @Override
-        protected int sizeOf(Long key, Bitmap value) {
-            return value.getByteCount() / 1024;
-        }
-    }
 
     public ImageLoader(Context context) {
         ActivityManager am = (ActivityManager) context.getSystemService(
@@ -178,6 +154,45 @@ public class ImageLoader implements ComponentCallbacks2 {
         Log.d(TAG, "backgroundImageExtractionFinished(): Task count=" + mAsyncTaskCount);
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+    }
+
+    @Override
+    public void onLowMemory() {
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        if (level >= TRIM_MEMORY_MODERATE) {
+            cache.evictAll();
+        } else if (level >= TRIM_MEMORY_BACKGROUND) {
+            cache.trimToSize(cache.size() / 2);
+        }
+    }
+
+    private class WorkItem {
+        public long imageID;
+        public ImageView imageView;
+
+        WorkItem(long id, ImageView view) {
+            imageID = id;
+            imageView = view;
+        }
+    }
+
+    private class ImageLruCache extends LruCache<Long, Bitmap> {
+
+        public ImageLruCache(int maxSize) {
+            super(maxSize);
+        }
+
+        @Override
+        protected int sizeOf(Long key, Bitmap value) {
+            return value.getByteCount() / 1024;
+        }
+    }
+
     private class SetImageTask extends AsyncTask<Long, Void, Integer> {
         private ImageView mImageView;
         private Bitmap bmp = null;
@@ -240,23 +255,6 @@ public class ImageLoader implements ComponentCallbacks2 {
                 artwork = null;
             }
             return artwork;
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-    }
-
-    @Override
-    public void onLowMemory() {
-    }
-
-    @Override
-    public void onTrimMemory(int level) {
-        if (level >= TRIM_MEMORY_MODERATE) {
-            cache.evictAll();
-        } else if (level >= TRIM_MEMORY_BACKGROUND) {
-            cache.trimToSize(cache.size() / 2);
         }
     }
 }

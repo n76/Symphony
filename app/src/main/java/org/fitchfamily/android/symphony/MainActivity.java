@@ -52,16 +52,16 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import org.fitchfamily.android.symphony.MusicService.MusicBinder;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 @TargetApi(23)
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
@@ -80,86 +80,37 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ArrayList<Song> currentDisplayPlayList;     // Tracks/songs in genre currently being played
 
     private ImageLoader mImageLoader;                   // LRU cache/background image loader
-
-    //
-    // Information to save display or playing state information
-    //
-    private class PlayInfo {
-        protected String genreName;        // Name of playing/display genre
-        protected int trackId;             // ID of the playing/display track
-        protected int position;            // Play position of the track.
-        protected int shuffle;             // Current shuffle mode
-        protected long shuffleSeed;        // Shuffle seed used.
-
-        PlayInfo() {
-            genreName = "";
-            trackId = 0;
-            position = 0;
-            shuffle = MusicService.PLAY_SEQUENTIAL;
-            shuffleSeed = 0;
-        }
-
-        PlayInfo(PlayInfo playInfo) {
-            if (playInfo != null) {
-                genreName = playInfo.genreName;
-                trackId = playInfo.trackId;
-                position = playInfo.position;
-                shuffle = playInfo.shuffle;
-                shuffleSeed = playInfo.shuffleSeed;
-            } else {
-                genreName = "";
-                trackId = 0;
-                position = 0;
-                shuffle = MusicService.PLAY_SEQUENTIAL;
-                shuffleSeed = 0;
-            }
-        }
-
-        public String toString() {
-            return "{" + genreName + "," + trackId + "," + position + "," + shuffle + ","+ shuffleSeed + "}";
-        }
-    }
-
     //
     // Values saved between instantiations
     //
     private PlayInfo playingInfo = null;
     private PlayInfo displayInfo = null;
-
     //
     // View and display related
     //
     private Spinner shuffleSpinner;
-
     // Viewing songs
     private SongAdapter songAdt;
     private ListView songView;
-
     // Viewing Genres
     private Spinner genreSpinner;
-
     // Viewing Albums
     private Spinner albumSpinner;
     private AlbumSpinnerAdaptor albumAdaptor;
-
     private ImageButton mPlayPauseButton;
     private SeekBar mSeekBar;
     private boolean mUserIsSeeking = false;
     private TextView mPlayingAlbum, mPlayingSong, mPlayingArtist, mDuration, mSongPosition;
     private ImageView mPlayingArtwork;
     private long mPlayingSongId;
-
     //runs without a timer by reposting this handler at the end of the runnable
     private Handler timerHandler = new Handler();
     private Runnable timerRunnable;
-
     //
     // The service that actually does the playing
     private MusicService musicSrv = null;
     private Intent playIntent;
-
     private boolean paused = false;
-
     // Receive notifications about what the music service is playing
     private BroadcastReceiver servicePlayingUpdateReceiver = new BroadcastReceiver() {
         @Override
@@ -186,6 +137,36 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         }
     };
+    //
+    // Create and bind to our background music service
+    //
+    private ServiceConnection musicConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "musicConnection.onServiceConnected() entry.");
+            MusicBinder binder = (MusicBinder) service;
+            //get service
+            musicSrv = binder.getService();
+            musicSrv.setShuffle(displayInfo.shuffle);
+            musicSrv.setShuffleSeed(displayInfo.shuffleSeed);
+            shuffleSpinner.setSelection(displayInfo.shuffle);
+            initializeMusicServerPlaylist(playingInfo);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "musicConnection.onServiceDisconnected() entry.");
+            musicSrv = null;
+        }
+    };
+
+    private static String formatDuration(int duration) {
+        return String.format(Locale.getDefault(), "%02d:%02d",
+                TimeUnit.MILLISECONDS.toMinutes(duration),
+                TimeUnit.MILLISECONDS.toSeconds(duration) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+    }
 
     //
     // "Normal" methods to override on any activity
@@ -292,6 +273,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     //
+    // End of Activity method overrides
+    //
+
+    //
     // Capture back key press and rather than exit, go to background
     //
     @Override
@@ -303,35 +288,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
         return super.onKeyDown(keyCode, event);
     }
-
-    //
-    // End of Activity method overrides
-    //
-
-
-    //
-    // Create and bind to our background music service
-    //
-    private ServiceConnection musicConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "musicConnection.onServiceConnected() entry.");
-            MusicBinder binder = (MusicBinder) service;
-            //get service
-            musicSrv = binder.getService();
-            musicSrv.setShuffle(displayInfo.shuffle);
-            musicSrv.setShuffleSeed(displayInfo.shuffleSeed);
-            shuffleSpinner.setSelection(displayInfo.shuffle);
-            initializeMusicServerPlaylist(playingInfo);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "musicConnection.onServiceDisconnected() entry.");
-            musicSrv = null;
-        }
-    };
 
     private void initializeMusicServerPlaylist(PlayInfo playInfo) {
         if (playInfo != null) {
@@ -1008,13 +964,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
     }
 
-    private static String formatDuration(int duration) {
-        return String.format(Locale.getDefault(), "%02d:%02d",
-                TimeUnit.MILLISECONDS.toMinutes(duration),
-                TimeUnit.MILLISECONDS.toSeconds(duration) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-    }
-
     private void startSeekTracking() {
         timerRunnable = new Runnable() {
             @Override
@@ -1030,5 +979,44 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void stopSeekTracking() {
         timerHandler.removeCallbacks(timerRunnable);
+    }
+
+    //
+    // Information to save display or playing state information
+    //
+    private class PlayInfo {
+        protected String genreName;        // Name of playing/display genre
+        protected int trackId;             // ID of the playing/display track
+        protected int position;            // Play position of the track.
+        protected int shuffle;             // Current shuffle mode
+        protected long shuffleSeed;        // Shuffle seed used.
+
+        PlayInfo() {
+            genreName = "";
+            trackId = 0;
+            position = 0;
+            shuffle = MusicService.PLAY_SEQUENTIAL;
+            shuffleSeed = 0;
+        }
+
+        PlayInfo(PlayInfo playInfo) {
+            if (playInfo != null) {
+                genreName = playInfo.genreName;
+                trackId = playInfo.trackId;
+                position = playInfo.position;
+                shuffle = playInfo.shuffle;
+                shuffleSeed = playInfo.shuffleSeed;
+            } else {
+                genreName = "";
+                trackId = 0;
+                position = 0;
+                shuffle = MusicService.PLAY_SEQUENTIAL;
+                shuffleSeed = 0;
+            }
+        }
+
+        public String toString() {
+            return "{" + genreName + "," + trackId + "," + position + "," + shuffle + "," + shuffleSeed + "}";
+        }
     }
 }
